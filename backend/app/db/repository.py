@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from sqlalchemy import asc, desc, func, select
@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import TransactionAnalysis
 from app.schemas.transactions import (
+    BehavioralSignals,
     PersistedTransactionResponse,
     TransactionAnalyzeRequest,
     TransactionAnalyzeResponse,
@@ -42,6 +43,7 @@ def create_transaction_analysis(
         recommended_action=output_data["recommended_action"],
         explanation=output_data["explanation"],
         evidence=output_data["evidence"],
+        behavioral_signals=output_data.get("behavioral_signals"),
         model_version=output_data["model_version"],
         feature_count=output_data["feature_count"],
     )
@@ -176,6 +178,185 @@ def _transaction_filters(**kwargs: Any) -> list[Any]:
     return filters
 
 
+def _history_clause(
+    current_step: int,
+    current_time: datetime,
+    transaction_id: str | None,
+) -> list[Any]:
+    conditions = [
+        (TransactionAnalysis.step < current_step)
+        | (
+            (TransactionAnalysis.step == current_step)
+            & (TransactionAnalysis.created_at < current_time)
+        )
+    ]
+    if transaction_id is not None:
+        conditions.append(TransactionAnalysis.transaction_id != transaction_id)
+    return conditions
+
+
+def _window_aggregate(
+    db: Session,
+    filters: list[Any],
+    start_time: datetime | None = None,
+) -> tuple[int, float]:
+    window_filters = list(filters)
+    if start_time is not None:
+        window_filters.append(TransactionAnalysis.created_at >= start_time)
+    result = db.execute(
+        select(
+            func.count(TransactionAnalysis.id),
+            func.coalesce(func.sum(TransactionAnalysis.amount), 0.0),
+        ).where(*window_filters)
+    ).one()
+    return int(result[0]), float(result[1] or 0.0)
+
+
+def get_sender_behavior_metrics(
+    db: Session,
+    name_orig: str,
+    current_step: int,
+    current_time: datetime,
+    transaction_id: str | None = None,
+) -> dict[str, Any]:
+    filters = [TransactionAnalysis.name_orig == name_orig] + _history_clause(
+        current_step, current_time, transaction_id
+    )
+    count_5m, sum_5m = _window_aggregate(db, filters, current_time - timedelta(minutes=5))
+    count_1h, sum_1h = _window_aggregate(db, filters, current_time - timedelta(hours=1))
+    count_24h, sum_24h = _window_aggregate(db, filters, current_time - timedelta(days=1))
+    historical = db.execute(
+        select(
+            func.avg(TransactionAnalysis.amount),
+            func.max(TransactionAnalysis.amount),
+        ).where(*filters)
+    ).one()
+    return {
+        "count_5m": count_5m,
+        "count_1h": count_1h,
+        "count_24h": count_24h,
+        "sum_5m": sum_5m,
+        "sum_1h": sum_1h,
+        "sum_24h": sum_24h,
+        "average_amount": float(historical[0]) if historical[0] is not None else None,
+        "max_amount": float(historical[1]) if historical[1] is not None else None,
+    }
+
+
+def get_recipient_behavior_metrics(
+    db: Session,
+    name_dest: str,
+    current_step: int,
+    current_time: datetime,
+    transaction_id: str | None = None,
+) -> dict[str, Any]:
+    filters = [TransactionAnalysis.name_dest == name_dest] + _history_clause(
+        current_step, current_time, transaction_id
+    )
+    total = db.execute(
+        select(
+            func.count(TransactionAnalysis.id),
+            func.count(func.distinct(TransactionAnalysis.name_orig)),
+            func.coalesce(func.sum(TransactionAnalysis.amount), 0.0),
+        ).where(*filters)
+    ).one()
+    count_1h, _ = _window_aggregate(db, filters, current_time - timedelta(hours=1))
+    count_24h, _ = _window_aggregate(db, filters, current_time - timedelta(days=1))
+    unique_1h = db.scalar(
+        select(func.count(func.distinct(TransactionAnalysis.name_orig))).where(
+            *filters, TransactionAnalysis.created_at >= current_time - timedelta(hours=1)
+        )
+    ) or 0
+    unique_24h = db.scalar(
+        select(func.count(func.distinct(TransactionAnalysis.name_orig))).where(
+            *filters, TransactionAnalysis.created_at >= current_time - timedelta(days=1)
+        )
+    ) or 0
+    return {
+        "count": int(total[0]),
+        "unique_senders": int(total[1]),
+        "amount_sum": float(total[2] or 0.0),
+        "count_1h": count_1h,
+        "count_24h": count_24h,
+        "unique_senders_1h": int(unique_1h),
+        "unique_senders_24h": int(unique_24h),
+    }
+
+
+def get_pair_behavior_metrics(
+    db: Session,
+    name_orig: str,
+    name_dest: str,
+    current_step: int,
+    current_time: datetime,
+    transaction_id: str | None = None,
+) -> dict[str, Any]:
+    filters = [
+        TransactionAnalysis.name_orig == name_orig,
+        TransactionAnalysis.name_dest == name_dest,
+    ] + _history_clause(current_step, current_time, transaction_id)
+    result = db.execute(
+        select(
+            func.count(TransactionAnalysis.id),
+            func.coalesce(func.sum(TransactionAnalysis.amount), 0.0),
+            func.max(TransactionAnalysis.created_at),
+        ).where(*filters)
+    ).one()
+    return {
+        "count": int(result[0]),
+        "amount_sum": float(result[1] or 0.0),
+        "last_created_at": result[2],
+    }
+
+
+def get_network_metrics(
+    db: Session,
+    name_orig: str,
+    name_dest: str,
+    amount: float,
+    current_step: int,
+    current_time: datetime,
+    transaction_id: str | None = None,
+) -> dict[str, Any]:
+    history = _history_clause(current_step, current_time, transaction_id)
+    sender_history = db.execute(
+        select(
+            func.count(TransactionAnalysis.id),
+            func.count(func.distinct(TransactionAnalysis.name_dest)),
+            func.coalesce(func.sum(TransactionAnalysis.amount), 0.0),
+        ).where(TransactionAnalysis.name_orig == name_orig, *history)
+    ).one()
+    recipient_history = db.execute(
+        select(
+            func.count(TransactionAnalysis.id),
+            func.count(func.distinct(TransactionAnalysis.name_orig)),
+            func.coalesce(func.sum(TransactionAnalysis.amount), 0.0),
+        ).where(TransactionAnalysis.name_dest == name_dest, *history)
+    ).one()
+    pair_history = db.execute(
+        select(
+            func.count(TransactionAnalysis.id),
+            func.coalesce(func.sum(TransactionAnalysis.amount), 0.0),
+        ).where(
+            TransactionAnalysis.name_orig == name_orig,
+            TransactionAnalysis.name_dest == name_dest,
+            *history,
+        )
+    ).one()
+
+    has_previous_relationship = int(pair_history[0]) > 0
+    return {
+        "outgoing_transaction_count": int(sender_history[0]) + 1,
+        "unique_recipient_count": int(sender_history[1]) + int(not has_previous_relationship),
+        "total_outgoing_amount": float(sender_history[2] or 0.0) + amount,
+        "incoming_transaction_count": int(recipient_history[0]) + 1,
+        "unique_sender_count": int(recipient_history[1]) + int(not has_previous_relationship),
+        "total_incoming_amount": float(recipient_history[2] or 0.0) + amount,
+        "previous_transaction_count": int(pair_history[0]),
+        "previous_transaction_amount": float(pair_history[1] or 0.0),
+    }
+
+
 def transaction_analysis_to_response(
     record: TransactionAnalysis,
 ) -> PersistedTransactionResponse:
@@ -200,6 +381,9 @@ def transaction_analysis_to_response(
         recommended_action=record.recommended_action,
         explanation=record.explanation,
         evidence=record.evidence,
+        behavioral_signals=record.behavioral_signals or BehavioralSignals(
+            status="unavailable", error="Behavioral signals were not stored"
+        ).model_dump(),
         model_version=record.model_version,
         feature_count=record.feature_count,
     )

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.services.risk_engine import RiskResult
+from app.schemas.transactions import BehavioralSignals, NetworkSignals
 from app.services.shap_service import ShapExplanation
 
 
@@ -21,7 +22,7 @@ class EvidenceItem:
 class EvidenceResult:
     status: str
     items: list[EvidenceItem]
-    risk_assessment: RiskResult
+    risk_assessment: RiskResult | None
 
 
 class EvidenceEngine:
@@ -35,8 +36,10 @@ class EvidenceEngine:
         self,
         fraud_probability: float,
         anomaly_signal: float,
-        shap_explanation: ShapExplanation,
-        risk_result: RiskResult,
+        shap_explanation: ShapExplanation | None,
+        risk_result: RiskResult | None,
+        behavioral_signals: BehavioralSignals | None = None,
+        network_signals: NetworkSignals | None = None,
     ) -> EvidenceResult:
         items = [
             EvidenceItem(
@@ -53,7 +56,7 @@ class EvidenceEngine:
             ),
         ]
 
-        if shap_explanation.status == "available":
+        if shap_explanation is not None and shap_explanation.status == "available":
             items.extend(
                 EvidenceItem(
                     category="MODEL_ATTRIBUTION",
@@ -67,8 +70,71 @@ class EvidenceEngine:
                 for feature in shap_explanation.top_features
             )
 
+        if behavioral_signals is not None and behavioral_signals.status == "available":
+            sender = behavioral_signals.sender
+            recipient = behavioral_signals.recipient
+            pair = behavioral_signals.sender_recipient
+            if sender is not None:
+                items.extend(
+                    [
+                        EvidenceItem(
+                            category="BEHAVIORAL_SIGNAL",
+                            type="sender_velocity",
+                            value=sender.transaction_count_5m,
+                            description="Persisted sender transaction count in the last 5 minutes",
+                        ),
+                        EvidenceItem(
+                            category="BEHAVIORAL_SIGNAL",
+                            type="sender_velocity",
+                            value=sender.transaction_count_1h,
+                            description="Persisted sender transaction count in the last hour",
+                        ),
+                    ]
+                )
+            if recipient is not None:
+                items.append(
+                    EvidenceItem(
+                        category="BEHAVIORAL_SIGNAL",
+                        type="recipient_network_activity",
+                        value=recipient.unique_senders_24h,
+                        description="Distinct persisted senders for the recipient in the last 24 hours",
+                    )
+                )
+            if pair is not None:
+                items.append(
+                    EvidenceItem(
+                        category="BEHAVIORAL_SIGNAL",
+                        type="sender_recipient_relationship",
+                        value=pair.pair_transaction_count,
+                        description="Previous persisted transactions between this sender and recipient",
+                    )
+                )
+
+        if network_signals is not None and network_signals.status == "available":
+            for pattern in network_signals.patterns:
+                if not pattern.detected:
+                    continue
+                if pattern.pattern == "HIGH_RECIPIENT_CONNECTIVITY":
+                    description = (
+                        "Network-based signal: High recipient connectivity observed. "
+                        "Recipient has transactions from multiple unique senders."
+                    )
+                else:
+                    description = (
+                        "Network-based signal: High sender connectivity observed. "
+                        "Sender has transactions with multiple unique recipients."
+                    )
+                items.append(
+                    EvidenceItem(
+                        category="NETWORK_SIGNAL",
+                        type=pattern.pattern.lower(),
+                        value=None,
+                        description=description,
+                    )
+                )
+
         return EvidenceResult(
-            status="available" if shap_explanation.status == "available" else "partial",
+            status="available" if shap_explanation is not None and shap_explanation.status == "available" else "partial",
             items=items,
             risk_assessment=risk_result,
         )

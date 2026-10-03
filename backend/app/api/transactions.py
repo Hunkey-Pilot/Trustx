@@ -3,7 +3,7 @@ from __future__ import annotations
 from uuid import uuid4
 
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -12,6 +12,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.schemas.transactions import (
+    BehavioralSignals,
+    CounterfactualResponse,
+    NetworkSignals,
     PersistedTransactionResponse,
     ShapExplanation as ShapExplanationSchema,
     TransactionAnalyzeRequest,
@@ -33,6 +36,9 @@ from app.services.feature_engineering import (
     create_model_features,
 )
 from app.services.evidence_engine import EvidenceEngine
+from app.services.behavioral_engine import BehavioralEngine
+from app.services.network_engine import NetworkEngine
+from app.services.counterfactual_engine import CounterfactualEngine
 from app.services.model_service import ModelInferenceError
 from app.services.risk_engine import RiskEngineError
 from app.services.shap_service import ShapExplanation as ShapServiceExplanation
@@ -95,9 +101,44 @@ def analyze_transaction(
         shap_explanation=shap_result,
         risk_result=risk_result,
     )
+    transaction_id = f"req_{uuid4().hex}"
+    behavioral_engine = getattr(request.app.state, "behavioral_engine", None)
+    network_engine = getattr(request.app.state, "network_engine", None)
+    if isinstance(db, Session) and behavioral_engine is not None:
+        behavioral_signals = behavioral_engine.calculate(
+            db,
+            transaction,
+            transaction_id=transaction_id,
+            analysis_time=datetime.now(timezone.utc),
+        )
+    else:
+        behavioral_signals = BehavioralSignals(
+            status="unavailable",
+            error="Behavioral signals unavailable: database session or engine not configured",
+        )
+    if isinstance(db, Session) and network_engine is not None:
+        network_signals = network_engine.calculate(
+            db,
+            transaction,
+            transaction_id=transaction_id,
+            analysis_time=datetime.now(timezone.utc),
+        )
+    else:
+        network_signals = NetworkSignals(
+            status="unavailable",
+            error="Network signals unavailable: database session or engine not configured",
+        )
+    evidence_result = request.app.state.evidence_engine.aggregate(
+        fraud_probability=prediction.fraud_probability,
+        anomaly_signal=prediction.anomaly_signal,
+        shap_explanation=shap_result,
+        risk_result=risk_result,
+        behavioral_signals=behavioral_signals,
+        network_signals=network_signals,
+    )
     model_version = model_loader.loaded.model_config.get("model_version")
     response = TransactionAnalyzeResponse(
-        transaction_id=f"req_{uuid4().hex}",
+        transaction_id=transaction_id,
         fraud_probability=prediction.fraud_probability,
         anomaly_signal=prediction.anomaly_signal,
         risk_score=risk_result.risk_score,
@@ -140,6 +181,8 @@ def analyze_transaction(
                 "recommended_action": evidence_result.risk_assessment.recommended_action,
             },
         },
+        behavioral_signals=behavioral_signals,
+        network_signals=network_signals,
         model_version=model_version,
         feature_count=prediction.feature_count,
     )
@@ -244,6 +287,162 @@ def transaction_summary_endpoint(
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Transaction summary is temporarily unavailable",
+        ) from exc
+
+
+@router.get(
+    "/{transaction_id}/behavior",
+    response_model=BehavioralSignals,
+    summary="Retrieve behavioral signals for a persisted transaction",
+)
+def transaction_behavior(
+    transaction_id: str,
+    db: Session = Depends(get_db),
+) -> BehavioralSignals:
+    try:
+        record = get_transaction_analysis(db, transaction_id)
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Transaction record is temporarily unavailable",
+        ) from exc
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
+    transaction = TransactionAnalyzeRequest.model_validate(
+        {
+            "step": record.step,
+            "type": record.transaction_type,
+            "amount": record.amount,
+            "nameOrig": record.name_orig,
+            "oldbalanceOrg": record.old_balance_org,
+            "newbalanceOrig": record.new_balance_orig,
+            "nameDest": record.name_dest,
+            "oldbalanceDest": record.old_balance_dest,
+            "newbalanceDest": record.new_balance_dest,
+            "historical_transactions": record.historical_transactions or [],
+        }
+    )
+    return request_behavior_engine(db, transaction, record.transaction_id, record.created_at)
+
+
+def request_behavior_engine(
+    db: Session,
+    transaction: TransactionAnalyzeRequest,
+    transaction_id: str,
+    analysis_time: datetime,
+) -> BehavioralSignals:
+    return BehavioralEngine().calculate(
+        db,
+        transaction,
+        transaction_id=transaction_id,
+        analysis_time=analysis_time,
+    )
+
+
+@router.get(
+    "/{transaction_id}/network",
+    response_model=NetworkSignals,
+    summary="Retrieve network signals for a persisted transaction",
+)
+def transaction_network(
+    transaction_id: str,
+    db: Session = Depends(get_db),
+) -> NetworkSignals:
+    try:
+        record = get_transaction_analysis(db, transaction_id)
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Transaction record is temporarily unavailable",
+        ) from exc
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
+    transaction = TransactionAnalyzeRequest.model_validate(
+        {
+            "step": record.step,
+            "type": record.transaction_type,
+            "amount": record.amount,
+            "nameOrig": record.name_orig,
+            "oldbalanceOrg": record.old_balance_org,
+            "newbalanceOrig": record.new_balance_orig,
+            "nameDest": record.name_dest,
+            "oldbalanceDest": record.old_balance_dest,
+            "newbalanceDest": record.new_balance_dest,
+            "historical_transactions": record.historical_transactions or [],
+        }
+    )
+    return request_network_engine(db, transaction, record.transaction_id, record.created_at)
+
+
+def request_network_engine(
+    db: Session,
+    transaction: TransactionAnalyzeRequest,
+    transaction_id: str,
+    analysis_time: datetime,
+) -> NetworkSignals:
+    return NetworkEngine().calculate(
+        db,
+        transaction,
+        transaction_id=transaction_id,
+        analysis_time=analysis_time,
+    )
+
+
+@router.get(
+    "/{transaction_id}/counterfactual",
+    response_model=CounterfactualResponse,
+    summary="Compare simple hypothetical amount scenarios",
+)
+def transaction_counterfactual(
+    transaction_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> CounterfactualResponse:
+    try:
+        record = get_transaction_analysis(db, transaction_id)
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Transaction record is temporarily unavailable",
+        ) from exc
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
+
+    transaction = TransactionAnalyzeRequest.model_validate(
+        {
+            "step": record.step,
+            "type": record.transaction_type,
+            "amount": record.amount,
+            "nameOrig": record.name_orig,
+            "oldbalanceOrg": record.old_balance_org,
+            "newbalanceOrig": record.new_balance_orig,
+            "nameDest": record.name_dest,
+            "oldbalanceDest": record.old_balance_dest,
+            "newbalanceDest": record.new_balance_dest,
+            "historical_transactions": record.historical_transactions or [],
+        }
+    )
+    model_loader = getattr(request.app.state, "model_loader", None)
+    model_service = getattr(request.app.state, "model_service", None)
+    if model_loader is None or model_loader.loaded is None or model_service is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Trained model services are unavailable",
+        )
+
+    engine = getattr(request.app.state, "counterfactual_engine", CounterfactualEngine())
+    try:
+        return engine.evaluate(
+            transaction_id=record.transaction_id,
+            transaction=transaction,
+            current_probability=record.fraud_probability,
+            feature_list=model_loader.loaded.feature_list,
+            model_service=model_service,
+        )
+    except (FeatureEngineeringError, ModelInferenceError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Counterfactual model evaluation is unavailable",
         ) from exc
 
 

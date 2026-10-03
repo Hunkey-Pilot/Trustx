@@ -38,5 +38,6 @@ class TransactionAnalysis(Base):
 
     explanation: Mapped[dict[str, Any]] = mapped_column(JSONB)
     evidence: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    behavioral_signals: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     model_version: Mapped[str | None] = mapped_column(String(128), nullable=True)
     feature_count: Mapped[int] = mapped_column(Integer)

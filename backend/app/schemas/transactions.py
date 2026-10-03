@@ -47,6 +47,8 @@ class TransactionAnalyzeResponse(BaseModel):
     recommended_action: str
     explanation: "ShapExplanation"
     evidence: "EvidenceResponse"
+    behavioral_signals: "BehavioralSignals | None" = None
+    network_signals: "NetworkSignals | None" = None
     model_version: str | None
     feature_count: int
 
@@ -73,7 +75,13 @@ class ShapExplanation(BaseModel):
 
 
 class EvidenceItem(BaseModel):
-    category: Literal["MODEL_SIGNAL", "ANOMALY_SIGNAL", "MODEL_ATTRIBUTION"]
+    category: Literal[
+        "MODEL_SIGNAL",
+        "ANOMALY_SIGNAL",
+        "MODEL_ATTRIBUTION",
+        "BEHAVIORAL_SIGNAL",
+        "NETWORK_SIGNAL",
+    ]
     type: str
     value: FiniteFloat | None
     description: str
@@ -117,6 +125,8 @@ class PersistedTransactionResponse(BaseModel):
     recommended_action: str
     explanation: ShapExplanation
     evidence: EvidenceResponse
+    behavioral_signals: BehavioralSignals
+    network_signals: NetworkSignals | None = None
     model_version: str | None
     feature_count: int
 
@@ -138,3 +148,98 @@ class TransactionSummaryResponse(BaseModel):
     maximum_fraud_probability: FiniteFloat | None
     average_risk_score: FiniteFloat | None
     maximum_risk_score: FiniteFloat | None
+
+
+class SenderBehaviorSignals(BaseModel):
+    current_amount: FiniteFloat
+    transaction_count_5m: int
+    transaction_count_1h: int
+    transaction_count_24h: int
+    amount_sum_1h: FiniteFloat
+    amount_sum_24h: FiniteFloat
+    historical_average_amount: FiniteFloat | None
+    amount_to_historical_average: FiniteFloat | None
+    historical_max_amount: FiniteFloat | None
+    amount_to_historical_max: FiniteFloat | None
+
+
+class RecipientBehaviorSignals(BaseModel):
+    transaction_count: int
+    unique_senders: int
+    amount_sum: FiniteFloat
+    transaction_count_1h: int
+    transaction_count_24h: int
+    unique_senders_1h: int
+    unique_senders_24h: int
+
+
+class PairBehaviorSignals(BaseModel):
+    pair_transaction_count: int
+    pair_amount_sum: FiniteFloat
+    is_new_recipient_for_sender: bool
+    minutes_since_previous_pair_transaction: FiniteFloat | None
+
+
+class BehavioralSignals(BaseModel):
+    status: Literal["available", "unavailable"]
+    sender: SenderBehaviorSignals | None = None
+    recipient: RecipientBehaviorSignals | None = None
+    sender_recipient: PairBehaviorSignals | None = None
+    error: str | None = None
+
+
+class NetworkSenderSignals(BaseModel):
+    outgoing_transaction_count: int
+    unique_recipient_count: int
+    total_outgoing_amount: FiniteFloat
+
+
+class NetworkRecipientSignals(BaseModel):
+    incoming_transaction_count: int
+    unique_sender_count: int
+    total_incoming_amount: FiniteFloat
+
+
+class NetworkRelationshipSignals(BaseModel):
+    previous_transaction_count: int
+    previous_transaction_amount: FiniteFloat
+    relationship_status: Literal["NEW_RELATIONSHIP", "EXISTING_RELATIONSHIP"]
+
+
+class NetworkPattern(BaseModel):
+    pattern: Literal["HIGH_RECIPIENT_CONNECTIVITY", "HIGH_SENDER_CONNECTIVITY"]
+    detected: bool
+
+
+class NetworkSignals(BaseModel):
+    status: Literal["available", "unavailable"]
+    transaction_id: str | None = None
+    sender: NetworkSenderSignals | None = None
+    recipient: NetworkRecipientSignals | None = None
+    relationship: NetworkRelationshipSignals | None = None
+    patterns: list[NetworkPattern] = Field(default_factory=list)
+    error: str | None = None
+
+
+class CounterfactualScenario(BaseModel):
+    amount: FiniteFloat
+    amount_ratio: FiniteFloat
+    fraud_probability: FiniteFloat | None
+    probability_change: FiniteFloat | None
+    valid: bool
+
+
+class BestCounterfactual(BaseModel):
+    amount: FiniteFloat
+    amount_ratio: FiniteFloat
+    fraud_probability: FiniteFloat
+    probability_reduction: FiniteFloat
+    description: str
+
+
+class CounterfactualResponse(BaseModel):
+    transaction_id: str
+    original_amount: FiniteFloat
+    original_fraud_probability: FiniteFloat
+    counterfactuals: list[CounterfactualScenario]
+    best_counterfactual: BestCounterfactual | None = None
