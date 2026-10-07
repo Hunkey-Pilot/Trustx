@@ -1,18 +1,13 @@
 import type { CounterfactualResponse } from "@/lib/api";
+import { formatNumber } from "@/lib/format";
 
 interface CounterfactualAnalysisProps {
   value: CounterfactualResponse | null;
 }
 
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    maximumSignificantDigits: 8,
-  }).format(value);
-}
-
 function formatChange(value: number | null): string {
   if (value === null) return "Invalid scenario";
-  return `${value > 0 ? "+" : ""}${formatNumber(value)}`;
+  return `${value > 0 ? "+" : ""}${formatNumber(value, 6)}`;
 }
 
 export default function CounterfactualAnalysis({
@@ -23,7 +18,7 @@ export default function CounterfactualAnalysis({
       <div className="section-heading">
         <div>
           <p className="eyebrow">Hypothetical model scenarios</p>
-          <h2>Counterfactual Analysis</h2>
+          <h2>Counterfactual analysis</h2>
         </div>
         <span className={value ? "availability available" : "availability"}>
           {value ? "Available" : "Not available"}
@@ -38,18 +33,37 @@ export default function CounterfactualAnalysis({
               <strong>{formatNumber(value.original_amount)}</strong>
             </div>
             <div>
-              <span>Original fraud probability</span>
-              <strong>{formatNumber(value.original_fraud_probability)}</strong>
+              <span>Stored model score</span>
+              <strong>{formatNumber(value.original_fraud_probability, 6)}</strong>
+            </div>
+            <div>
+              <span>
+                {value.baseline_source === "recomputed"
+                  ? "Recomputed baseline (100%)"
+                  : "Baseline (stored score)"}
+              </span>
+              <strong>
+                {formatNumber(value.baseline_fraud_probability ?? value.original_fraud_probability, 6)}
+              </strong>
             </div>
           </div>
-
-          {value.best_counterfactual ? (
-            <p className="counterfactual-best-note">
-              {value.best_counterfactual.description} Reduction: {formatNumber(value.best_counterfactual.probability_reduction)}.
+          {value.baseline_matches_stored === false && (
+            <p className="source-note">
+              The recomputed baseline differs from the stored score because scenarios rebuild the
+              balances consistently (balance-error features become zero). Changes below are
+              measured against the recomputed baseline.
             </p>
-          ) : (
-            <p className="counterfactual-no-result">No qualifying counterfactual found.</p>
           )}
+
+          <div className="interpretation-block">
+            <h3>Model output</h3>
+            <p>
+              {value.interpretation?.model_output.replace(/^MODEL OUTPUT:\s*/, "") ??
+                (value.best_counterfactual
+                  ? `${value.best_counterfactual.description} Reduction: ${formatNumber(value.best_counterfactual.probability_reduction, 6)}.`
+                  : "No qualifying counterfactual found.")}
+            </p>
+          </div>
 
           <div className="counterfactual-table-scroll">
             <table className="counterfactual-table">
@@ -57,8 +71,8 @@ export default function CounterfactualAnalysis({
                 <tr>
                   <th>Scenario</th>
                   <th>Amount</th>
-                  <th>Fraud Probability</th>
-                  <th>Change</th>
+                  <th>Model score</th>
+                  <th>Change vs baseline</th>
                 </tr>
               </thead>
               <tbody>
@@ -78,7 +92,7 @@ export default function CounterfactualAnalysis({
                       <td>{formatNumber(scenario.amount)}</td>
                       <td>
                         {scenario.valid && scenario.fraud_probability !== null
-                          ? formatNumber(scenario.fraud_probability)
+                          ? formatNumber(scenario.fraud_probability, 6)
                           : "Invalid scenario"}
                       </td>
                       <td>
@@ -92,13 +106,30 @@ export default function CounterfactualAnalysis({
               </tbody>
             </table>
           </div>
+
+          <div className="interpretation-block recommendation-block">
+            <h3>Investigation recommendation</h3>
+            {value.interpretation?.investigation_recommendations.length ? (
+              <ul className="recommendation-list">
+                {value.interpretation.investigation_recommendations.map((action) => (
+                  <li key={action.code}>
+                    <strong>{action.label}</strong>
+                    <span>{action.rationale}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted-copy">No specific investigation action suggested.</p>
+            )}
+          </div>
         </>
       ) : (
         <p className="muted-copy">Not available</p>
       )}
 
       <p className="counterfactual-disclaimer">
-        Counterfactual results are hypothetical model scenarios and do not guarantee that changing the transaction amount would prevent fraud.
+        {value?.interpretation?.disclaimer ??
+          "Counterfactual scenarios are hypothetical model responses, not causal explanations. A lower amount does not make a transaction legitimate."}
       </p>
     </div>
   );

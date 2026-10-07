@@ -1,0 +1,231 @@
+{
+  "environment": {
+    "python": "3.14.0",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "scikit_learn": "1.9.1",
+    "xgboost": "3.4.1",
+    "generated_utc": "2026-10-07T05:05:45Z",
+    "command": "evaluation\\run_evaluation.py --sections benchmark,isolation_forest,ablation,baselines,risk,thresholds,fairness,adversarial,signals,report"
+  },
+  "scope": "PaySim has no demographic, KYC, gender, age, geography or account-holder attributes, so demographic fairness CANNOT be evaluated. Only transaction-type and amount-band slices are possible.",
+  "amount_band_edges_from_train_split": {
+    "P50": 75131.44,
+    "P90": 366064.526,
+    "P99": 1620118.4842000045
+  },
+  "caveat": "Slices with few fraud rows give unstable rates; counts are shown for that reason.",
+  "models": {
+    "production": {
+      "transaction_type": {
+        "CASH_IN": {
+          "n": 20713,
+          "fraud": 0,
+          "legit": 20713,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "false_positive_rate": 0.0,
+          "false_negative_rate": null,
+          "precision": null,
+          "recall": null
+        },
+        "CASH_OUT": {
+          "n": 29152,
+          "fraud": 626,
+          "legit": 28526,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "false_positive_rate": 0.0,
+          "false_negative_rate": 0.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "DEBIT": {
+          "n": 712,
+          "fraud": 0,
+          "legit": 712,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "false_positive_rate": 0.0,
+          "false_negative_rate": null,
+          "precision": null,
+          "recall": null
+        },
+        "PAYMENT": {
+          "n": 30062,
+          "fraud": 0,
+          "legit": 30062,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "false_positive_rate": 0.0,
+          "false_negative_rate": null,
+          "precision": null,
+          "recall": null
+        },
+        "TRANSFER": {
+          "n": 8827,
+          "fraud": 626,
+          "legit": 8201,
+          "false_positives": 0,
+          "false_negatives": 1,
+          "false_positive_rate": 0.0,
+          "false_negative_rate": 0.001597444089456869,
+          "precision": 1.0,
+          "recall": 0.9984025559105432
+        }
+      },
+      "amount_band": {
+        "high (P90-P99)": {
+          "n": 8042,
+          "fraud": 359,
+          "legit": 7683,
+          "false_positives": 0,
+          "false_negatives": 1,
+          "false_positive_rate": 0.0,
+          "false_negative_rate": 0.002785515320334262,
+          "precision": 1.0,
+          "recall": 0.9972144846796658
+        },
+        "low (<= train P50)": {
+          "n": 44810,
+          "fraud": 237,
+          "legit": 44573,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "false_positive_rate": 0.0,
+          "false_negative_rate": 0.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "medium (P50-P90)": {
+          "n": 35766,
+          "fraud": 356,
+          "legit": 35410,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "false_positive_rate": 0.0,
+          "false_negative_rate": 0.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "very high (> train P99)": {
+          "n": 848,
+          "fraud": 300,
+          "legit": 548,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "false_positive_rate": 0.0,
+          "false_negative_rate": 0.0,
+          "precision": 1.0,
+          "recall": 1.0
+        }
+      }
+    },
+    "ablation_C2": {
+      "transaction_type": {
+        "CASH_IN": {
+          "n": 20713,
+          "fraud": 0,
+          "legit": 20713,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "false_positive_rate": 0.0,
+          "false_negative_rate": null,
+          "precision": null,
+          "recall": null
+        },
+        "CASH_OUT": {
+          "n": 29152,
+          "fraud": 626,
+          "legit": 28526,
+          "false_positives": 667,
+          "false_negatives": 2,
+          "false_positive_rate": 0.02338217766248335,
+          "false_negative_rate": 0.003194888178913738,
+          "precision": 0.4833462432223083,
+          "recall": 0.9968051118210862
+        },
+        "DEBIT": {
+          "n": 712,
+          "fraud": 0,
+          "legit": 712,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "false_positive_rate": 0.0,
+          "false_negative_rate": null,
+          "precision": null,
+          "recall": null
+        },
+        "PAYMENT": {
+          "n": 30062,
+          "fraud": 0,
+          "legit": 30062,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "false_positive_rate": 0.0,
+          "false_negative_rate": null,
+          "precision": null,
+          "recall": null
+        },
+        "TRANSFER": {
+          "n": 8827,
+          "fraud": 626,
+          "legit": 8201,
+          "false_positives": 23,
+          "false_negatives": 1,
+          "false_positive_rate": 0.002804536032191196,
+          "false_negative_rate": 0.001597444089456869,
+          "precision": 0.9645061728395061,
+          "recall": 0.9984025559105432
+        }
+      },
+      "amount_band": {
+        "high (P90-P99)": {
+          "n": 8042,
+          "fraud": 359,
+          "legit": 7683,
+          "false_positives": 25,
+          "false_negatives": 1,
+          "false_positive_rate": 0.0032539372640895486,
+          "false_negative_rate": 0.002785515320334262,
+          "precision": 0.9347258485639687,
+          "recall": 0.9972144846796658
+        },
+        "low (<= train P50)": {
+          "n": 44810,
+          "fraud": 237,
+          "legit": 44573,
+          "false_positives": 314,
+          "false_negatives": 2,
+          "false_positive_rate": 0.00704462342673816,
+          "false_negative_rate": 0.008438818565400843,
+          "precision": 0.42805100182149364,
+          "recall": 0.9915611814345991
+        },
+        "medium (P50-P90)": {
+          "n": 35766,
+          "fraud": 356,
+          "legit": 35410,
+          "false_positives": 351,
+          "false_negatives": 0,
+          "false_positive_rate": 0.009912454109008755,
+          "false_negative_rate": 0.0,
+          "precision": 0.5035360678925035,
+          "recall": 1.0
+        },
+        "very high (> train P99)": {
+          "n": 848,
+          "fraud": 300,
+          "legit": 548,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "false_positive_rate": 0.0,
+          "false_negative_rate": 0.0,
+          "precision": 1.0,
+          "recall": 1.0
+        }
+      }
+    }
+  }
+}

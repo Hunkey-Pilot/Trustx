@@ -85,9 +85,10 @@ async function shutdown(exitCode) {
   await Promise.all([...children].map(stopProcessTree));
 }
 
-function startChild(name, executable, args, cwd) {
+function startChild(name, executable, args, cwd, env = process.env) {
   const child = spawn(executable, args, {
     cwd,
+    env,
     stdio: "inherit",
     windowsHide: true,
     detached: process.platform !== "win32",
@@ -152,6 +153,13 @@ async function startDevelopment() {
     process.execPath,
     [nextExecutable, "dev", "--port", String(frontendPort)],
     frontendDirectory,
+    {
+      ...process.env,
+      // This script starts/reuses the local API, so point the frontend proxy at it unless the
+      // shell explicitly overrides the URL (a value in .env.local alone must not win here).
+      NEXT_PUBLIC_API_BASE_URL:
+        process.env.NEXT_PUBLIC_API_BASE_URL || `http://${host}:${backendPort}`,
+    },
   );
 }
 

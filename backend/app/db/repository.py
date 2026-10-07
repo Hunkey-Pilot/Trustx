@@ -1,15 +1,20 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+import hashlib
+import json
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from sqlalchemy import asc, desc, func, select
+from sqlalchemy import asc, case, desc, func, select
 from sqlalchemy.orm import Session
 
-from app.db.models import TransactionAnalysis
+from app.db.models import CaseReview, TransactionAnalysis
 from app.schemas.transactions import (
     BehavioralSignals,
     PersistedTransactionResponse,
+    ReviewListResponse,
+    ReviewModelAssessment,
+    ReviewResponse,
     TransactionAnalyzeRequest,
     TransactionAnalyzeResponse,
     TransactionListResponse,
@@ -17,14 +22,74 @@ from app.schemas.transactions import (
 )
 
 
+RISK_PRIORITY = {"CRITICAL": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1}
+REVIEW_QUEUE_LEVELS = ("HIGH", "CRITICAL")
+# A HIGH/CRITICAL transaction stays in the review queue until a reviewer closes it
+# (DISMISSED or CONFIRMED_SUSPICIOUS). ESCALATED is a hand-off, not a resolution.
+OPEN_REVIEW_STATUSES = ("OPEN", "UNDER_REVIEW", "ESCALATED")
+
+_FINGERPRINT_FIELDS = (
+    "step",
+    "type",
+    "amount",
+    "nameOrig",
+    "oldbalanceOrg",
+    "newbalanceOrig",
+    "nameDest",
+    "oldbalanceDest",
+    "newbalanceDest",
+)
+
+
+def request_fingerprint(transaction: TransactionAnalyzeRequest) -> str:
+    """Deterministic fingerprint of a transaction's own fields.
+
+    ``historical_transactions`` is deliberately excluded: the same transaction
+    resubmitted with a different history payload is still the same transaction.
+    """
+    data = transaction.model_dump(mode="json")
+    canonical = json.dumps(
+        {name: data[name] for name in _FINGERPRINT_FIELDS},
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def find_recent_duplicate(
+    db: Session,
+    fingerprint: str,
+    window_seconds: int,
+) -> TransactionAnalysis | None:
+    if window_seconds <= 0:
+        return None
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=window_seconds)
+    return db.scalar(
+        select(TransactionAnalysis)
+        .where(
+            TransactionAnalysis.request_fingerprint == fingerprint,
+            TransactionAnalysis.created_at >= cutoff,
+        )
+        .order_by(TransactionAnalysis.id.asc())
+        .limit(1)
+    )
+
+
 def create_transaction_analysis(
     db: Session,
     transaction: TransactionAnalyzeRequest,
     analysis: TransactionAnalyzeResponse,
+    created_at: datetime | None = None,
 ) -> TransactionAnalysis:
     input_data = transaction.model_dump(mode="json")
     output_data = analysis.model_dump(mode="json")
+    extra: dict[str, Any] = {}
+    if created_at is not None:
+        extra["created_at"] = created_at
     record = TransactionAnalysis(
+        **extra,
+        request_fingerprint=request_fingerprint(transaction),
+        network_signals=output_data.get("network_signals"),
         transaction_id=analysis.transaction_id,
         step=input_data["step"],
         transaction_type=input_data["type"],
@@ -80,6 +145,8 @@ def list_transaction_analyses(
     max_risk_score: float | None = None,
     sort_by: str = "created_at",
     sort_order: str = "desc",
+    review_queue: bool = False,
+    review_status: str | None = None,
 ) -> TransactionListResponse:
     filters = _transaction_filters(
         risk_level=risk_level,
@@ -93,19 +160,40 @@ def list_transaction_analyses(
         min_risk_score=min_risk_score,
         max_risk_score=max_risk_score,
     )
-    base_query = select(TransactionAnalysis).where(*filters)
+    base_query = select(TransactionAnalysis, CaseReview.status).outerjoin(
+        CaseReview, CaseReview.transaction_id == TransactionAnalysis.transaction_id
+    ).where(*filters)
+    if review_queue:
+        base_query = base_query.where(
+            TransactionAnalysis.risk_level.in_(REVIEW_QUEUE_LEVELS),
+            (CaseReview.status.is_(None)) | (CaseReview.status.in_(OPEN_REVIEW_STATUSES)),
+        )
+    if review_status is not None:
+        if review_status == "UNREVIEWED":
+            base_query = base_query.where(CaseReview.status.is_(None))
+        else:
+            base_query = base_query.where(CaseReview.status == review_status)
     total = db.scalar(
         select(func.count()).select_from(base_query.subquery())
     ) or 0
+    risk_priority = case(
+        {level: rank for level, rank in RISK_PRIORITY.items()},
+        value=TransactionAnalysis.risk_level,
+        else_=0,
+    )
     sort_column = {
         "created_at": TransactionAnalysis.created_at,
         "fraud_probability": TransactionAnalysis.fraud_probability,
         "risk_score": TransactionAnalysis.risk_score,
         "amount": TransactionAnalysis.amount,
+        "risk_priority": risk_priority,
     }[sort_by]
     ordering = desc(sort_column) if sort_order == "desc" else asc(sort_column)
-    records = db.scalars(
-        base_query.order_by(ordering, TransactionAnalysis.id.desc())
+    secondary = (
+        [desc(TransactionAnalysis.risk_score)] if sort_by == "risk_priority" else []
+    )
+    rows = db.execute(
+        base_query.order_by(ordering, *secondary, TransactionAnalysis.id.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
     ).all()
@@ -113,8 +201,11 @@ def list_transaction_analyses(
         total=total,
         page=page,
         page_size=page_size,
-        returned_items=len(records),
-        items=[transaction_analysis_to_response(record) for record in records],
+        returned_items=len(rows),
+        items=[
+            transaction_analysis_to_response(record, review_status=status)
+            for record, status in rows
+        ],
     )
 
 
@@ -183,12 +274,16 @@ def _history_clause(
     current_time: datetime,
     transaction_id: str | None,
 ) -> list[Any]:
+    """Point-in-time history filter.
+
+    A stored row counts as history only if it belongs to a strictly earlier
+    ``step`` AND was already stored when the analysis ran
+    (``created_at <= current_time``). Same-step and later-step rows can never
+    influence the result, and neither can rows inserted afterwards.
+    """
     conditions = [
-        (TransactionAnalysis.step < current_step)
-        | (
-            (TransactionAnalysis.step == current_step)
-            & (TransactionAnalysis.created_at < current_time)
-        )
+        TransactionAnalysis.step < current_step,
+        TransactionAnalysis.created_at <= current_time,
     ]
     if transaction_id is not None:
         conditions.append(TransactionAnalysis.transaction_id != transaction_id)
@@ -357,8 +452,70 @@ def get_network_metrics(
     }
 
 
+def get_review(db: Session, transaction_id: str) -> CaseReview | None:
+    return db.scalar(
+        select(CaseReview).where(CaseReview.transaction_id == transaction_id)
+    )
+
+
+def list_reviews(
+    db: Session,
+    page: int,
+    page_size: int,
+    status: str | None = None,
+    risk_level: str | None = None,
+) -> ReviewListResponse:
+    query = select(CaseReview, TransactionAnalysis).join(
+        TransactionAnalysis,
+        TransactionAnalysis.transaction_id == CaseReview.transaction_id,
+    )
+    if status is not None:
+        query = query.where(CaseReview.status == status)
+    if risk_level is not None:
+        query = query.where(TransactionAnalysis.risk_level == risk_level)
+    total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
+    rows = db.execute(
+        query.order_by(CaseReview.updated_at.desc(), CaseReview.id.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    ).all()
+    return ReviewListResponse(
+        total=total,
+        page=page,
+        page_size=page_size,
+        returned_items=len(rows),
+        items=[review_to_response(review, analysis) for review, analysis in rows],
+    )
+
+
+def review_to_response(
+    review: CaseReview,
+    analysis: TransactionAnalysis | None,
+) -> ReviewResponse:
+    assessment = None
+    if analysis is not None:
+        assessment = ReviewModelAssessment(
+            risk_level=analysis.risk_level,
+            risk_score=analysis.risk_score,
+            fraud_probability=analysis.fraud_probability,
+            recommended_action=analysis.recommended_action,
+        )
+    return ReviewResponse(
+        transaction_id=review.transaction_id,
+        status=review.status,
+        analyst_note=review.analyst_note,
+        decision=review.decision,
+        reviewed_by=review.reviewed_by,
+        reviewed_at=review.reviewed_at,
+        created_at=review.created_at,
+        updated_at=review.updated_at,
+        model_assessment=assessment,
+    )
+
+
 def transaction_analysis_to_response(
     record: TransactionAnalysis,
+    review_status: str | None = None,
 ) -> PersistedTransactionResponse:
     return PersistedTransactionResponse(
         id=record.id,
@@ -384,6 +541,8 @@ def transaction_analysis_to_response(
         behavioral_signals=record.behavioral_signals or BehavioralSignals(
             status="unavailable", error="Behavioral signals were not stored"
         ).model_dump(),
+        network_signals=record.network_signals,
+        review_status=review_status,
         model_version=record.model_version,
         feature_count=record.feature_count,
     )

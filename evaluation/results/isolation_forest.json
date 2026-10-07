@@ -1,0 +1,88 @@
+{
+  "environment": {
+    "python": "3.14.0",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "scikit_learn": "1.9.1",
+    "xgboost": "3.4.1",
+    "generated_utc": "2026-10-07T04:42:56Z",
+    "command": "evaluation\\run_evaluation.py --sections benchmark,isolation_forest,ablation,baselines,risk,thresholds,fairness,adversarial,signals,report"
+  },
+  "note": "Isolation Forest is an anomaly SIGNAL. It is NOT part of the production risk score because no production-safe calibration exists. No min-max normalisation from test-set statistics is used.",
+  "ranking_quality_of_negative_decision_function": {
+    "roc_auc": 0.8853439593347314,
+    "pr_auc": 0.3825656540273615,
+    "prevalence": 0.01399414302640109
+  },
+  "native_predict_minus_one_as_flag": {
+    "n": 89466,
+    "positives": 1252,
+    "prevalence": 0.01399414302640109,
+    "threshold": 0.5,
+    "precision": 0.35514541387024606,
+    "recall": 0.5071884984025559,
+    "f1": 0.41776315789473684,
+    "confusion_matrix": {
+      "tn": 87061,
+      "fp": 1153,
+      "fn": 617,
+      "tp": 635
+    },
+    "roc_auc": 0.7470590053624314,
+    "pr_auc": 0.18702214381381446
+  },
+  "decision_function_quantiles": {
+    "quantile_levels": [
+      0.0,
+      0.01,
+      0.05,
+      0.25,
+      0.5,
+      0.75,
+      0.95,
+      0.99,
+      1.0
+    ],
+    "fraud": [
+      -0.23618985284303573,
+      -0.21930568314713533,
+      -0.19006312427421473,
+      -0.0921664431733519,
+      -0.002760614409323736,
+      0.08419351157188198,
+      0.1324255591465984,
+      0.14048085780117375,
+      0.14684617574761288
+    ],
+    "legit": [
+      -0.19888350530311727,
+      -0.014497153155740468,
+      0.05967258907958627,
+      0.1064784311486616,
+      0.12145065855276543,
+      0.13148983304962392,
+      0.14461245888301805,
+      0.1482562659851569,
+      0.15240646189707102
+    ]
+  },
+  "decision_function_mean": {
+    "fraud": -0.010171107295877556,
+    "legit": 0.11413681968637869
+  },
+  "share_below_zero": {
+    "fraud": 0.5071884984025559,
+    "legit": 0.013070487677692883
+  },
+  "trained_on": "normal rows of the older row-order 70% split (steps <= 323) per the training notebook",
+  "sklearn_pickle_note": "Artifact was pickled with scikit-learn 1.6.1; evaluation loads it under the installed version.",
+  "test": {
+    "rows": 89466,
+    "fraud": 1252,
+    "prevalence": 0.01399414302640109,
+    "steps": 112,
+    "fraud_per_step": 11.178571428571429,
+    "legit_per_step": 787.625
+  }
+}

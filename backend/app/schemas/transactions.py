@@ -1,9 +1,24 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, FiniteFloat
+
+
+# Input limits. PaySim steps run 1..743 and amounts reach ~9.2e7; the limits below
+# leave generous headroom while rejecting absurd values.
+MAX_STEP = 100_000
+MAX_MONEY = 1e12
+MAX_ID_LENGTH = 100
+MAX_HISTORY_ITEMS = 500
+ACCOUNT_ID_PATTERN = r"^[A-Za-z0-9_.:\-]+$"
+TRANSACTION_ID_PATTERN = r"^[A-Za-z0-9_.:\-]+$"
+MAX_TRANSACTION_ID_LENGTH = 128
+
+AccountId = Annotated[
+    str, Field(min_length=1, max_length=MAX_ID_LENGTH, pattern=ACCOUNT_ID_PATTERN)
+]
 
 
 TransactionType = Literal[
@@ -18,24 +33,34 @@ TransactionType = Literal[
 class HistoricalTransaction(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    step: int = Field(ge=0)
-    amount: FiniteFloat = Field(ge=0)
-    nameOrig: str = Field(min_length=1)
+    step: int = Field(ge=0, le=MAX_STEP)
+    amount: FiniteFloat = Field(ge=0, le=MAX_MONEY)
+    nameOrig: AccountId
+
+
+class StoredHistoricalTransaction(BaseModel):
+    """Lenient read model: rows stored before input limits existed must stay readable."""
+
+    step: int
+    amount: FiniteFloat
+    nameOrig: str
 
 
 class TransactionAnalyzeRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    step: int = Field(ge=0)
+    step: int = Field(ge=0, le=MAX_STEP)
     type: TransactionType
-    amount: FiniteFloat = Field(ge=0)
-    nameOrig: str = Field(min_length=1)
-    oldbalanceOrg: FiniteFloat = Field(ge=0)
-    newbalanceOrig: FiniteFloat = Field(ge=0)
-    nameDest: str = Field(min_length=1)
-    oldbalanceDest: FiniteFloat = Field(ge=0)
-    newbalanceDest: FiniteFloat = Field(ge=0)
-    historical_transactions: list[HistoricalTransaction] = Field(default_factory=list)
+    amount: FiniteFloat = Field(ge=0, le=MAX_MONEY)
+    nameOrig: AccountId
+    oldbalanceOrg: FiniteFloat = Field(ge=0, le=MAX_MONEY)
+    newbalanceOrig: FiniteFloat = Field(ge=0, le=MAX_MONEY)
+    nameDest: AccountId
+    oldbalanceDest: FiniteFloat = Field(ge=0, le=MAX_MONEY)
+    newbalanceDest: FiniteFloat = Field(ge=0, le=MAX_MONEY)
+    historical_transactions: list[HistoricalTransaction] = Field(
+        default_factory=list, max_length=MAX_HISTORY_ITEMS
+    )
 
 
 class TransactionAnalyzeResponse(BaseModel):
@@ -49,6 +74,8 @@ class TransactionAnalyzeResponse(BaseModel):
     evidence: "EvidenceResponse"
     behavioral_signals: "BehavioralSignals | None" = None
     network_signals: "NetworkSignals | None" = None
+    investigator_summary: "InvestigatorSummary | None" = None
+    is_duplicate: bool = False
     model_version: str | None
     feature_count: int
 
@@ -117,7 +144,7 @@ class PersistedTransactionResponse(BaseModel):
     nameDest: str
     oldbalanceDest: FiniteFloat
     newbalanceDest: FiniteFloat
-    historical_transactions: list[HistoricalTransaction]
+    historical_transactions: list[StoredHistoricalTransaction]
     fraud_probability: FiniteFloat
     anomaly_signal: FiniteFloat
     risk_score: FiniteFloat = Field(ge=0, le=100)
@@ -127,6 +154,8 @@ class PersistedTransactionResponse(BaseModel):
     evidence: EvidenceResponse
     behavioral_signals: BehavioralSignals
     network_signals: NetworkSignals | None = None
+    investigator_summary: "InvestigatorSummary | None" = None
+    review_status: str | None = None
     model_version: str | None
     feature_count: int
 
@@ -180,8 +209,12 @@ class PairBehaviorSignals(BaseModel):
     minutes_since_previous_pair_transaction: FiniteFloat | None
 
 
+SignalSource = Literal["analysis_time", "legacy_recomputed"]
+
+
 class BehavioralSignals(BaseModel):
     status: Literal["available", "unavailable"]
+    source: SignalSource | None = None
     sender: SenderBehaviorSignals | None = None
     recipient: RecipientBehaviorSignals | None = None
     sender_recipient: PairBehaviorSignals | None = None
@@ -213,6 +246,7 @@ class NetworkPattern(BaseModel):
 
 class NetworkSignals(BaseModel):
     status: Literal["available", "unavailable"]
+    source: SignalSource | None = None
     transaction_id: str | None = None
     sender: NetworkSenderSignals | None = None
     recipient: NetworkRecipientSignals | None = None
@@ -237,9 +271,100 @@ class BestCounterfactual(BaseModel):
     description: str
 
 
+class InvestigationAction(BaseModel):
+    code: Literal[
+        "ANALYST_REVIEW",
+        "ADDITIONAL_VERIFICATION",
+        "RECIPIENT_VERIFICATION",
+        "ACCOUNT_VERIFICATION",
+        "TRANSACTION_DELAY",
+        "TRANSACTION_LIMIT_REVIEW",
+    ]
+    label: str
+    rationale: str
+
+
+class CounterfactualInterpretation(BaseModel):
+    """Separates what the model said from what an investigator might do."""
+
+    model_output: str
+    investigation_recommendations: list[InvestigationAction] = Field(default_factory=list)
+    disclaimer: str
+
+
 class CounterfactualResponse(BaseModel):
     transaction_id: str
     original_amount: FiniteFloat
     original_fraud_probability: FiniteFloat
+    baseline_fraud_probability: FiniteFloat | None = None
+    baseline_source: Literal["recomputed", "stored"] = "recomputed"
+    baseline_matches_stored: bool | None = None
     counterfactuals: list[CounterfactualScenario]
     best_counterfactual: BestCounterfactual | None = None
+    best_scenario: BestCounterfactual | None = None
+    interpretation: CounterfactualInterpretation | None = None
+
+
+class InvestigatorSummary(BaseModel):
+    """Deterministic text built only from stored, verified analysis fields."""
+
+    investigator_summary: str
+    key_facts: list[str] = Field(default_factory=list)
+    investigation_recommendations: list[InvestigationAction] = Field(default_factory=list)
+    disclaimer: str
+
+
+ReviewStatus = Literal[
+    "OPEN",
+    "UNDER_REVIEW",
+    "DISMISSED",
+    "ESCALATED",
+    "CONFIRMED_SUSPICIOUS",
+]
+
+
+class ReviewCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: ReviewStatus = "OPEN"
+    analyst_note: str | None = Field(default=None, max_length=2000)
+    decision: str | None = Field(default=None, max_length=200)
+
+
+class ReviewUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: ReviewStatus | None = None
+    analyst_note: str | None = Field(default=None, max_length=2000)
+    decision: str | None = Field(default=None, max_length=200)
+
+
+class ReviewModelAssessment(BaseModel):
+    """Read-only snapshot of the model output; reviews never change it."""
+
+    risk_level: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    risk_score: FiniteFloat
+    fraud_probability: FiniteFloat
+    recommended_action: str
+
+
+class ReviewResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    transaction_id: str
+    status: ReviewStatus
+    analyst_note: str | None = None
+    decision: str | None = None
+    reviewed_by: str | None = None
+    reviewed_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+    model_assessment: ReviewModelAssessment | None = None
+
+
+class ReviewListResponse(BaseModel):
+    total: int
+    page: int
+    page_size: int
+    returned_items: int
+    items: list[ReviewResponse]

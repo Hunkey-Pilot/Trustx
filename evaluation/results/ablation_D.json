@@ -1,0 +1,40 @@
+{
+  "environment": {
+    "python": "3.14.0",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "scikit_learn": "1.9.1",
+    "xgboost": "3.4.1",
+    "generated_utc": "2026-10-07T04:56:35Z",
+    "command": "evaluation\\run_evaluation.py --sections benchmark,isolation_forest,ablation,baselines,risk,thresholds,fairness,adversarial,signals,report"
+  },
+  "n": 89466,
+  "positives": 1252,
+  "prevalence": 0.01399414302640109,
+  "threshold": 0.5,
+  "precision": 0.03296558624503015,
+  "recall": 1.0,
+  "f1": 0.0638270755270067,
+  "confusion_matrix": {
+    "tn": 51487,
+    "fp": 36727,
+    "fn": 0,
+    "tp": 1252
+  },
+  "roc_auc": 0.8494314961344005,
+  "pr_auc": 0.05194217909736497,
+  "features_used": 5,
+  "feature_names": [
+    "type_CASH_IN",
+    "type_CASH_OUT",
+    "type_DEBIT",
+    "type_PAYMENT",
+    "type_TRANSFER"
+  ],
+  "scale_pos_weight": 1051.0683272790175,
+  "train_seconds": 93.1,
+  "variant": "D",
+  "description": "Transaction-type only (5 one-hot features)",
+  "removed": null
+}

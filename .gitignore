@@ -7,3 +7,11 @@ __pycache__/
 *.py[cod]
 
 Dataset/PS_20174392719_1491204439457_log.csv
+.env.local
+**/.env.local
+.venv/
+**/.venv/
+node_modules/
+**/node_modules/
+.next/
+**/.next/

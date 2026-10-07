@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import SiteHeader from "@/components/SiteHeader";
+import AnalystReview from "@/components/AnalystReview";
+import BehavioralSignalsPanel from "@/components/BehavioralSignalsPanel";
 import CounterfactualAnalysis from "@/components/CounterfactualAnalysis";
+import InvestigatorSummaryPanel from "@/components/InvestigatorSummaryPanel";
+import NetworkAnalysisPanel from "@/components/NetworkAnalysisPanel";
 import {
   getNetworkAnalysis,
   getTransaction,
@@ -10,102 +14,8 @@ import {
   type CounterfactualResponse,
   type NetworkAnalysisResponse,
   type PersistedTransaction,
-  type SignalPayload,
 } from "@/lib/api";
-
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    maximumSignificantDigits: 8,
-  }).format(value);
-}
-
-function riskClass(level: string): string {
-  return `risk-tag risk-${level.toLowerCase()}`;
-}
-
-function SignalBlock({ title, value }: { title: string; value: SignalPayload | null }) {
-  return (
-    <section className="investigation-section">
-      <div className="section-title-row">
-        <h2>{title}</h2>
-        <span className={value?.status === "available" ? "availability available" : "availability"}>
-          {value?.status === "available" ? "Available" : "Not available"}
-        </span>
-      </div>
-      {value?.status === "available" ? (
-        <pre className="investigation-json">{JSON.stringify(value, null, 2)}</pre>
-      ) : (
-        <p className="muted-copy">Not available</p>
-      )}
-    </section>
-  );
-}
-
-function NetworkAnalysisBlock({ value }: { value: NetworkAnalysisResponse | null }) {
-  const detectedPatterns = value?.patterns.filter((pattern) => pattern.detected) ?? [];
-
-  return (
-    <section className="investigation-section">
-      <div className="section-title-row">
-        <div>
-          <p className="eyebrow">Relationship activity</p>
-          <h2>Network Analysis</h2>
-        </div>
-        <span className={value?.status === "available" ? "availability available" : "availability"}>
-          {value?.status === "available" ? "Available" : "Not available"}
-        </span>
-      </div>
-      {value?.status !== "available" || !value.sender || !value.recipient || !value.relationship ? (
-        <p className="muted-copy">Not available</p>
-      ) : (
-        <>
-          <div className="network-analysis-grid">
-            <div className="network-group">
-              <h3>Sender Activity</h3>
-              <dl>
-                <div><dt>Outgoing Transactions</dt><dd>{value.sender.outgoing_transaction_count}</dd></div>
-                <div><dt>Unique Recipients</dt><dd>{value.sender.unique_recipient_count}</dd></div>
-                <div><dt>Total Outgoing Amount</dt><dd>{formatNumber(value.sender.total_outgoing_amount)}</dd></div>
-              </dl>
-            </div>
-            <div className="network-group">
-              <h3>Recipient Activity</h3>
-              <dl>
-                <div><dt>Incoming Transactions</dt><dd>{value.recipient.incoming_transaction_count}</dd></div>
-                <div><dt>Unique Senders</dt><dd>{value.recipient.unique_sender_count}</dd></div>
-                <div><dt>Total Incoming Amount</dt><dd>{formatNumber(value.recipient.total_incoming_amount)}</dd></div>
-              </dl>
-            </div>
-            <div className="network-group relationship-group">
-              <h3>Relationship</h3>
-              <dl>
-                <div><dt>Previous Transactions</dt><dd>{value.relationship.previous_transaction_count}</dd></div>
-                <div><dt>Previous Amount</dt><dd>{formatNumber(value.relationship.previous_transaction_amount)}</dd></div>
-                <div><dt>Relationship Status</dt><dd>{value.relationship.relationship_status.replaceAll("_", " ")}</dd></div>
-              </dl>
-            </div>
-          </div>
-          <div className="network-patterns">
-            <h3>Network Patterns</h3>
-            {detectedPatterns.length ? (
-              <ul>
-                {detectedPatterns.map((pattern) => (
-                  <li key={pattern.pattern}>
-                    {pattern.pattern === "HIGH_RECIPIENT_CONNECTIVITY"
-                      ? "High recipient connectivity observed"
-                      : "High sender connectivity observed"}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="muted-copy">No notable network pattern detected</p>
-            )}
-          </div>
-        </>
-      )}
-    </section>
-  );
-}
+import { MODEL_SCORE_DISCLAIMER, formatNumber, riskClass } from "@/lib/format";
 
 export default function TransactionInvestigation({
   transactionId,
@@ -128,7 +38,9 @@ export default function TransactionInvestigation({
         if (cancelled) return;
         setTransaction(persisted);
         const [network, counterfactualData] = await Promise.all([
-          getNetworkAnalysis(transactionId).catch(() => null),
+          persisted.network_signals
+            ? Promise.resolve(persisted.network_signals)
+            : getNetworkAnalysis(transactionId).catch(() => null),
           getTransactionCounterfactual(transactionId).catch(() => null),
         ]);
         if (!cancelled) {
@@ -181,7 +93,7 @@ export default function TransactionInvestigation({
             <div className="section-title-row">
               <div>
                 <p className="eyebrow">Record</p>
-                <h2>Transaction information</h2>
+                <h2>Transaction overview</h2>
               </div>
               <span className="transaction-type-tag">{transaction.type}</span>
             </div>
@@ -192,7 +104,7 @@ export default function TransactionInvestigation({
               </div>
               <div>
                 <dt>Amount</dt>
-                <dd>{formatNumber(transaction.amount)}</dd>
+                <dd>{formatNumber(transaction.amount, 8)}</dd>
               </div>
               <div>
                 <dt>Sender</dt>
@@ -203,11 +115,23 @@ export default function TransactionInvestigation({
                 <dd>{transaction.nameDest}</dd>
               </div>
               <div>
+                <dt>Sender balance</dt>
+                <dd>
+                  {formatNumber(transaction.oldbalanceOrg, 8)} → {formatNumber(transaction.newbalanceOrig, 8)}
+                </dd>
+              </div>
+              <div>
+                <dt>Recipient balance</dt>
+                <dd>
+                  {formatNumber(transaction.oldbalanceDest, 8)} → {formatNumber(transaction.newbalanceDest, 8)}
+                </dd>
+              </div>
+              <div>
                 <dt>Step</dt>
                 <dd>{transaction.step}</dd>
               </div>
               <div>
-                <dt>Created at</dt>
+                <dt>Analyzed at</dt>
                 <dd>{new Date(transaction.created_at).toLocaleString()}</dd>
               </div>
             </dl>
@@ -223,24 +147,33 @@ export default function TransactionInvestigation({
             </div>
             <div className="investigation-metrics">
               <div className="investigation-metric">
-                <span>Fraud probability</span>
+                <span>Model score</span>
                 <strong>{formatNumber(transaction.fraud_probability)}</strong>
+                <small>Uncalibrated model output</small>
               </div>
               <div className="investigation-metric">
                 <span>Risk score</span>
                 <strong>{formatNumber(transaction.risk_score)}</strong>
+                <small>Model score x 100</small>
               </div>
               <div className="investigation-metric action-metric">
                 <span>Recommended action</span>
                 <strong>{transaction.recommended_action}</strong>
               </div>
             </div>
+            <p className="score-disclaimer">{MODEL_SCORE_DISCLAIMER}</p>
           </section>
+
+          <InvestigatorSummaryPanel value={transaction.investigator_summary} />
 
           <section className="investigation-section anomaly-section">
             <div>
               <p className="eyebrow">Isolation Forest</p>
               <h2>Anomaly signal</h2>
+              <p className="source-note">
+                Raw decision value; below 0 means the transaction looks more unusual than the data the
+                model was trained on. It is shown for context and is not part of the risk score.
+              </p>
             </div>
             <strong>{formatNumber(transaction.anomaly_signal)}</strong>
           </section>
@@ -269,6 +202,7 @@ export default function TransactionInvestigation({
             ) : (
               <p className="muted-copy">Not available</p>
             )}
+            <p className="source-note">SHAP describes how the model used its inputs; it is not causal proof.</p>
           </section>
 
           <section className="investigation-section">
@@ -297,11 +231,16 @@ export default function TransactionInvestigation({
             )}
           </section>
 
-          <SignalBlock title="Behavioral signals" value={transaction.behavioral_signals} />
-          <NetworkAnalysisBlock value={networkAnalysis} />
+          <BehavioralSignalsPanel value={transaction.behavioral_signals} />
+          <NetworkAnalysisPanel value={networkAnalysis} />
           <section className="investigation-section">
             <CounterfactualAnalysis value={counterfactual} />
           </section>
+
+          <AnalystReview
+            transactionId={transaction.transaction_id}
+            riskLevel={transaction.risk_level}
+          />
         </>
       ) : (
         <section className="investigation-state">

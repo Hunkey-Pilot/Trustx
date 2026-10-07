@@ -1,0 +1,990 @@
+{
+  "environment": {
+    "python": "3.14.0",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "scikit_learn": "1.9.1",
+    "xgboost": "3.4.1",
+    "generated_utc": "2026-10-07T05:05:44Z",
+    "command": "evaluation\\run_evaluation.py --sections benchmark,isolation_forest,ablation,baselines,risk,thresholds,fairness,adversarial,signals,report"
+  },
+  "HYPOTHETICAL_ASSUMPTIONS": {
+    "warning": "No real cost data exists. All costs below are hypothetical and exist only to compare policies.",
+    "missed_fraud": "loss = transaction amount of each fraud that is neither reviewed nor held",
+    "false_hold": "flat customer-friction cost per LEGITIMATE transaction that is held (score >= hold threshold)",
+    "analyst_review": "flat cost per reviewed alert (score >= review threshold, fraud or legitimate)",
+    "analyst_assumption": "an analyst correctly identifies every fraud among reviewed alerts (optimistic)",
+    "defaults": {
+      "missed_fraud_cost": "the transaction amount of every missed fraud (x multiplier)",
+      "false_hold_cost": 10.0,
+      "analyst_review_cost": 2.0
+    },
+    "sensitivity_grid_(false_hold, review)": [
+      [
+        10.0,
+        2.0
+      ],
+      [
+        2.0,
+        0.5
+      ],
+      [
+        50.0,
+        2.0
+      ],
+      [
+        10.0,
+        10.0
+      ],
+      [
+        50.0,
+        10.0
+      ]
+    ],
+    "current_policy": {
+      "review_threshold": 0.6,
+      "hold_threshold": 0.85
+    }
+  },
+  "grid": [
+    0.01,
+    0.05,
+    0.1,
+    0.2,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.7,
+    0.8,
+    0.85,
+    0.9,
+    0.95,
+    0.99
+  ],
+  "models": {
+    "production": {
+      "test_prevalence": [
+        {
+          "false_hold_cost": 10.0,
+          "analyst_review_cost": 2.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 401547.08,
+            "cost_per_100k": 448826.459213556,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 401547.08,
+            "cost_per_100k": 448826.459213556,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "best_on_grid": {
+            "review": 0.1,
+            "hold": 0.1,
+            "total_cost": 401547.08,
+            "cost_per_100k": 448826.459213556,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "current_cost_over_best": 1.0
+        },
+        {
+          "false_hold_cost": 2.0,
+          "analyst_review_cost": 0.5,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 399670.58,
+            "cost_per_100k": 446729.01437417563,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 399670.58,
+            "cost_per_100k": 446729.01437417563,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "best_on_grid": {
+            "review": 0.1,
+            "hold": 0.1,
+            "total_cost": 399670.58,
+            "cost_per_100k": 446729.01437417563,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "current_cost_over_best": 1.0
+        },
+        {
+          "false_hold_cost": 50.0,
+          "analyst_review_cost": 2.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 401547.08,
+            "cost_per_100k": 448826.459213556,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 401547.08,
+            "cost_per_100k": 448826.459213556,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "best_on_grid": {
+            "review": 0.1,
+            "hold": 0.1,
+            "total_cost": 401547.08,
+            "cost_per_100k": 448826.459213556,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "current_cost_over_best": 1.0
+        },
+        {
+          "false_hold_cost": 10.0,
+          "analyst_review_cost": 10.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 411555.08,
+            "cost_per_100k": 460012.831690251,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 411555.08,
+            "cost_per_100k": 460012.831690251,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "best_on_grid": {
+            "review": 0.1,
+            "hold": 0.1,
+            "total_cost": 411555.08,
+            "cost_per_100k": 460012.831690251,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "current_cost_over_best": 1.0
+        },
+        {
+          "false_hold_cost": 50.0,
+          "analyst_review_cost": 10.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 411555.08,
+            "cost_per_100k": 460012.831690251,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 411555.08,
+            "cost_per_100k": 460012.831690251,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "best_on_grid": {
+            "review": 0.1,
+            "hold": 0.1,
+            "total_cost": 411555.08,
+            "cost_per_100k": 460012.831690251,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "current_cost_over_best": 1.0
+        }
+      ],
+      "full_dataset_prevalence": [
+        {
+          "false_hold_cost": 10.0,
+          "analyst_review_cost": 2.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 401547.08,
+            "cost_per_100k": 41399.77490183957,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 401547.08,
+            "cost_per_100k": 41399.77490183957,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "best_on_grid": {
+            "review": 0.1,
+            "hold": 0.1,
+            "total_cost": 401547.08,
+            "cost_per_100k": 41399.77490183957,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "current_cost_over_best": 1.0
+        },
+        {
+          "false_hold_cost": 2.0,
+          "analyst_review_cost": 0.5,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 399670.58,
+            "cost_per_100k": 41206.30648562471,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 399670.58,
+            "cost_per_100k": 41206.30648562471,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "best_on_grid": {
+            "review": 0.1,
+            "hold": 0.1,
+            "total_cost": 399670.58,
+            "cost_per_100k": 41206.30648562471,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "current_cost_over_best": 1.0
+        },
+        {
+          "false_hold_cost": 50.0,
+          "analyst_review_cost": 2.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 401547.08,
+            "cost_per_100k": 41399.77490183957,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 401547.08,
+            "cost_per_100k": 41399.77490183957,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "best_on_grid": {
+            "review": 0.1,
+            "hold": 0.1,
+            "total_cost": 401547.08,
+            "cost_per_100k": 41399.77490183957,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "current_cost_over_best": 1.0
+        },
+        {
+          "false_hold_cost": 10.0,
+          "analyst_review_cost": 10.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 411555.08,
+            "cost_per_100k": 42431.60645498549,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 411555.08,
+            "cost_per_100k": 42431.60645498549,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "best_on_grid": {
+            "review": 0.1,
+            "hold": 0.1,
+            "total_cost": 411555.08,
+            "cost_per_100k": 42431.60645498549,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "current_cost_over_best": 1.0
+        },
+        {
+          "false_hold_cost": 50.0,
+          "analyst_review_cost": 10.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 411555.08,
+            "cost_per_100k": 42431.60645498549,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 411555.08,
+            "cost_per_100k": 42431.60645498549,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "best_on_grid": {
+            "review": 0.1,
+            "hold": 0.1,
+            "total_cost": 411555.08,
+            "cost_per_100k": 42431.60645498549,
+            "missed_fraud": 1,
+            "reviewed": 1251.0,
+            "false_holds": 0.0
+          },
+          "current_cost_over_best": 1.0
+        }
+      ]
+    },
+    "ablation_B": {
+      "test_prevalence": [
+        {
+          "false_hold_cost": 10.0,
+          "analyst_review_cost": 2.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 557953.0,
+            "cost_per_100k": 623648.089777122,
+            "missed_fraud": 3,
+            "reviewed": 1313.0,
+            "false_holds": 63.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 423663.88,
+            "cost_per_100k": 473547.35877316527,
+            "missed_fraud": 2,
+            "reviewed": 1315.0,
+            "false_holds": 63.0
+          },
+          "best_on_grid": {
+            "review": 0.01,
+            "hold": 0.99,
+            "total_cost": 3226.0,
+            "cost_per_100k": 3605.8390897100576,
+            "missed_fraud": 0,
+            "reviewed": 1338.0,
+            "false_holds": 55.0
+          },
+          "current_cost_over_best": 172.95505269683818
+        },
+        {
+          "false_hold_cost": 2.0,
+          "analyst_review_cost": 0.5,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 555479.5,
+            "cost_per_100k": 620883.3523349653,
+            "missed_fraud": 3,
+            "reviewed": 1313.0,
+            "false_holds": 63.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 421187.38,
+            "cost_per_100k": 470779.2681018487,
+            "missed_fraud": 2,
+            "reviewed": 1315.0,
+            "false_holds": 63.0
+          },
+          "best_on_grid": {
+            "review": 0.01,
+            "hold": 0.99,
+            "total_cost": 779.0,
+            "cost_per_100k": 870.7218384637739,
+            "missed_fraud": 0,
+            "reviewed": 1338.0,
+            "false_holds": 55.0
+          },
+          "current_cost_over_best": 713.0673940949936
+        },
+        {
+          "false_hold_cost": 50.0,
+          "analyst_review_cost": 2.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 560473.0,
+            "cost_per_100k": 626464.8022712539,
+            "missed_fraud": 3,
+            "reviewed": 1313.0,
+            "false_holds": 63.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 426183.88,
+            "cost_per_100k": 476364.0712672971,
+            "missed_fraud": 2,
+            "reviewed": 1315.0,
+            "false_holds": 63.0
+          },
+          "best_on_grid": {
+            "review": 0.01,
+            "hold": 0.99,
+            "total_cost": 5426.0,
+            "cost_per_100k": 6064.873806809291,
+            "missed_fraud": 0,
+            "reviewed": 1338.0,
+            "false_holds": 55.0
+          },
+          "current_cost_over_best": 103.29395503133063
+        },
+        {
+          "false_hold_cost": 10.0,
+          "analyst_review_cost": 10.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 568457.0,
+            "cost_per_100k": 635388.8628082176,
+            "missed_fraud": 3,
+            "reviewed": 1313.0,
+            "false_holds": 63.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 434183.88,
+            "cost_per_100k": 485306.0156931125,
+            "missed_fraud": 2,
+            "reviewed": 1315.0,
+            "false_holds": 63.0
+          },
+          "best_on_grid": {
+            "review": 0.01,
+            "hold": 0.99,
+            "total_cost": 13930.0,
+            "cost_per_100k": 15570.160731451055,
+            "missed_fraud": 0,
+            "reviewed": 1338.0,
+            "false_holds": 55.0
+          },
+          "current_cost_over_best": 40.808111988514
+        },
+        {
+          "false_hold_cost": 50.0,
+          "analyst_review_cost": 10.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 570977.0,
+            "cost_per_100k": 638205.5753023495,
+            "missed_fraud": 3,
+            "reviewed": 1313.0,
+            "false_holds": 63.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 436703.88,
+            "cost_per_100k": 488122.7281872444,
+            "missed_fraud": 2,
+            "reviewed": 1315.0,
+            "false_holds": 63.0
+          },
+          "best_on_grid": {
+            "review": 0.01,
+            "hold": 0.99,
+            "total_cost": 16130.0,
+            "cost_per_100k": 18029.195448550287,
+            "missed_fraud": 0,
+            "reviewed": 1338.0,
+            "false_holds": 55.0
+          },
+          "current_cost_over_best": 35.39845009299442
+        }
+      ],
+      "full_dataset_prevalence": [
+        {
+          "false_hold_cost": 10.0,
+          "analyst_review_cost": 2.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 565518.5621057787,
+            "cost_per_100k": 58305.345350764896,
+            "missed_fraud": 3,
+            "reviewed": 1951.780969353356,
+            "false_holds": 691.8000167072099
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 431249.40401107114,
+            "cost_per_100k": 44462.10454975993,
+            "missed_fraud": 2,
+            "reviewed": 1963.7619219995022,
+            "false_holds": 691.8000167072099
+          },
+          "best_on_grid": {
+            "review": 0.01,
+            "hold": 0.99,
+            "total_cost": 10432.24781051755,
+            "cost_per_100k": 1075.5717886820028,
+            "missed_fraud": 0,
+            "reviewed": 2196.3619275685724,
+            "false_holds": 603.9523955380404
+          },
+          "current_cost_over_best": 54.208697145368426
+        },
+        {
+          "false_hold_cost": 2.0,
+          "analyst_review_cost": 0.5,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 557056.4905180911,
+            "cost_per_100k": 57432.90006008187,
+            "missed_fraud": 3,
+            "reviewed": 1951.780969353356,
+            "false_holds": 691.8000167072099
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 422769.3609944142,
+            "cost_per_100k": 43587.806392623505,
+            "missed_fraud": 2,
+            "reviewed": 1963.7619219995022,
+            "false_holds": 691.8000167072099
+          },
+          "best_on_grid": {
+            "review": 0.01,
+            "hold": 0.99,
+            "total_cost": 2306.085754860367,
+            "cost_per_100k": 237.75899741459455,
+            "missed_fraud": 0,
+            "reviewed": 2196.3619275685724,
+            "false_holds": 603.9523955380404
+          },
+          "current_cost_over_best": 241.55931293709446
+        },
+        {
+          "false_hold_cost": 50.0,
+          "analyst_review_cost": 2.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 593190.5627740672,
+            "cost_per_100k": 61158.34729203339,
+            "missed_fraud": 3,
+            "reviewed": 1951.780969353356,
+            "false_holds": 691.8000167072099
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 458921.4046793595,
+            "cost_per_100k": 47315.10649102842,
+            "missed_fraud": 2,
+            "reviewed": 1963.7619219995022,
+            "false_holds": 691.8000167072099
+          },
+          "best_on_grid": {
+            "review": 0.01,
+            "hold": 0.99,
+            "total_cost": 34590.34363203916,
+            "cost_per_100k": 3566.287769154494,
+            "missed_fraud": 0,
+            "reviewed": 2196.3619275685724,
+            "false_holds": 603.9523955380404
+          },
+          "current_cost_over_best": 17.149021966483932
+        },
+        {
+          "false_hold_cost": 10.0,
+          "analyst_review_cost": 10.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 581132.8098606056,
+            "cost_per_100k": 59915.184830388025,
+            "missed_fraud": 3,
+            "reviewed": 1951.780969353356,
+            "false_holds": 691.8000167072099
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 446959.49938706716,
+            "cost_per_100k": 46081.82598380116,
+            "missed_fraud": 2,
+            "reviewed": 1963.7619219995022,
+            "false_holds": 691.8000167072099
+          },
+          "best_on_grid": {
+            "review": 0.01,
+            "hold": 0.99,
+            "total_cost": 28003.14323106613,
+            "cost_per_100k": 2887.142962937522,
+            "missed_fraud": 0,
+            "reviewed": 2196.3619275685724,
+            "false_holds": 603.9523955380404
+          },
+          "current_cost_over_best": 20.752413579626605
+        },
+        {
+          "false_hold_cost": 50.0,
+          "analyst_review_cost": 10.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 608804.8105288941,
+            "cost_per_100k": 62768.18677165652,
+            "missed_fraud": 3,
+            "reviewed": 1951.780969353356,
+            "false_holds": 691.8000167072099
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 474631.50005535554,
+            "cost_per_100k": 48934.82792506964,
+            "missed_fraud": 2,
+            "reviewed": 1963.7619219995022,
+            "false_holds": 691.8000167072099
+          },
+          "best_on_grid": {
+            "review": 0.01,
+            "hold": 0.99,
+            "total_cost": 52161.23905258774,
+            "cost_per_100k": 5377.858943410013,
+            "missed_fraud": 0,
+            "reviewed": 2196.3619275685724,
+            "false_holds": 603.9523955380404
+          },
+          "current_cost_over_best": 11.671594110621324
+        }
+      ]
+    },
+    "ablation_C2": {
+      "test_prevalence": [
+        {
+          "false_hold_cost": 10.0,
+          "analyst_review_cost": 2.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 411204.54000000004,
+            "cost_per_100k": 459621.01804037293,
+            "missed_fraud": 5,
+            "reviewed": 1839.0,
+            "false_holds": 321.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 406675.08,
+            "cost_per_100k": 454558.2455905037,
+            "missed_fraud": 1,
+            "reviewed": 2210.0,
+            "false_holds": 321.0
+          },
+          "best_on_grid": {
+            "review": 0.05,
+            "hold": 0.99,
+            "total_cost": 6730.0,
+            "cost_per_100k": 7522.410748217199,
+            "missed_fraud": 0,
+            "reviewed": 3165.0,
+            "false_holds": 40.0
+          },
+          "current_cost_over_best": 61.100228826151564
+        },
+        {
+          "false_hold_cost": 2.0,
+          "analyst_review_cost": 0.5,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 405878.04000000004,
+            "cost_per_100k": 453667.35966735973,
+            "missed_fraud": 5,
+            "reviewed": 1839.0,
+            "false_holds": 321.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 400792.08,
+            "cost_per_100k": 447982.56320836965,
+            "missed_fraud": 1,
+            "reviewed": 2210.0,
+            "false_holds": 321.0
+          },
+          "best_on_grid": {
+            "review": 0.05,
+            "hold": 0.99,
+            "total_cost": 1662.5,
+            "cost_per_100k": 1858.2478259897614,
+            "missed_fraud": 0,
+            "reviewed": 3165.0,
+            "false_holds": 40.0
+          },
+          "current_cost_over_best": 244.13716691729326
+        },
+        {
+          "false_hold_cost": 50.0,
+          "analyst_review_cost": 2.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 424044.54000000004,
+            "cost_per_100k": 473972.8388438066,
+            "missed_fraud": 5,
+            "reviewed": 1839.0,
+            "false_holds": 321.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 419515.08,
+            "cost_per_100k": 468910.06639393733,
+            "missed_fraud": 1,
+            "reviewed": 2210.0,
+            "false_holds": 321.0
+          },
+          "best_on_grid": {
+            "review": 0.05,
+            "hold": 0.99,
+            "total_cost": 8330.0,
+            "cost_per_100k": 9310.799633380278,
+            "missed_fraud": 0,
+            "reviewed": 3165.0,
+            "false_holds": 40.0
+          },
+          "current_cost_over_best": 50.90570708283314
+        },
+        {
+          "false_hold_cost": 10.0,
+          "analyst_review_cost": 10.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 425916.54000000004,
+            "cost_per_100k": 476065.2538394474,
+            "missed_fraud": 5,
+            "reviewed": 1839.0,
+            "false_holds": 321.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 424355.08,
+            "cost_per_100k": 474319.9427715557,
+            "missed_fraud": 1,
+            "reviewed": 2210.0,
+            "false_holds": 321.0
+          },
+          "best_on_grid": {
+            "review": 0.05,
+            "hold": 0.99,
+            "total_cost": 32050.0,
+            "cost_per_100k": 35823.66485592292,
+            "missed_fraud": 0,
+            "reviewed": 3165.0,
+            "false_holds": 40.0
+          },
+          "current_cost_over_best": 13.289127613104526
+        },
+        {
+          "false_hold_cost": 50.0,
+          "analyst_review_cost": 10.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 438756.54000000004,
+            "cost_per_100k": 490417.07464288117,
+            "missed_fraud": 5,
+            "reviewed": 1839.0,
+            "false_holds": 321.0
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 437195.08,
+            "cost_per_100k": 488671.76357498934,
+            "missed_fraud": 1,
+            "reviewed": 2210.0,
+            "false_holds": 321.0
+          },
+          "best_on_grid": {
+            "review": 0.05,
+            "hold": 0.99,
+            "total_cost": 33650.0,
+            "cost_per_100k": 37612.053741086,
+            "missed_fraud": 0,
+            "reviewed": 3165.0,
+            "false_holds": 40.0
+          },
+          "current_cost_over_best": 13.03882734026746
+        }
+      ],
+      "full_dataset_prevalence": [
+        {
+          "false_hold_cost": 10.0,
+          "analyst_review_cost": 2.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 455060.8459271664,
+            "cost_per_100k": 46917.08027866966,
+            "missed_fraud": 5,
+            "reviewed": 7747.723966518544,
+            "false_holds": 3524.8857994129266
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 457857.40516943764,
+            "cost_per_100k": 47205.40742359545,
+            "missed_fraud": 1,
+            "reviewed": 11781.733587654195,
+            "false_holds": 3524.8857994129266
+          },
+          "best_on_grid": {
+            "review": 0.05,
+            "hold": 0.99,
+            "total_cost": 48909.5058826138,
+            "cost_per_100k": 5042.6030593981895,
+            "missed_fraud": 0,
+            "reviewed": 22258.56241207766,
+            "false_holds": 439.2381058458476
+          },
+          "current_cost_over_best": 9.30413909760904
+        },
+        {
+          "false_hold_cost": 2.0,
+          "analyst_review_cost": 0.5,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 415240.1735820852,
+            "cost_per_100k": 42811.54208990666,
+            "missed_fraud": 5,
+            "reviewed": 7747.723966518544,
+            "false_holds": 3524.8857994129266
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 411985.718392653,
+            "cost_per_100k": 42476.00556385194,
+            "missed_fraud": 1,
+            "reviewed": 11781.733587654195,
+            "false_holds": 3524.8857994129266
+          },
+          "best_on_grid": {
+            "review": 0.05,
+            "hold": 0.99,
+            "total_cost": 12007.757417730525,
+            "cost_per_100k": 1238.0078922997975,
+            "missed_fraud": 0,
+            "reviewed": 22258.56241207766,
+            "false_holds": 439.2381058458476
+          },
+          "current_cost_over_best": 34.58099286457487
+        },
+        {
+          "false_hold_cost": 50.0,
+          "analyst_review_cost": 2.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 596056.2779036835,
+            "cost_per_100k": 61453.804455609104,
+            "missed_fraud": 5,
+            "reviewed": 7747.723966518544,
+            "false_holds": 3524.8857994129266
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 598852.8371459547,
+            "cost_per_100k": 61742.1316005349,
+            "missed_fraud": 1,
+            "reviewed": 11781.733587654195,
+            "false_holds": 3524.8857994129266
+          },
+          "best_on_grid": {
+            "review": 0.05,
+            "hold": 0.99,
+            "total_cost": 66479.0301164477,
+            "cost_per_100k": 6854.032863378183,
+            "missed_fraud": 0,
+            "reviewed": 22258.56241207766,
+            "false_holds": 439.2381058458476
+          },
+          "current_cost_over_best": 8.966079632323218
+        },
+        {
+          "false_hold_cost": 10.0,
+          "analyst_review_cost": 10.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 517042.6376593148,
+            "cost_per_100k": 53307.44483000357,
+            "missed_fraud": 5,
+            "reviewed": 7747.723966518544,
+            "false_holds": 3524.8857994129266
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 552111.2738706713,
+            "cost_per_100k": 56923.044886825446,
+            "missed_fraud": 1,
+            "reviewed": 11781.733587654195,
+            "false_holds": 3524.8857994129266
+          },
+          "best_on_grid": {
+            "review": 0.05,
+            "hold": 0.99,
+            "total_cost": 226978.00517923507,
+            "cost_per_100k": 23401.585493010953,
+            "missed_fraud": 0,
+            "reviewed": 22258.56241207766,
+            "false_holds": 439.2381058458476
+          },
+          "current_cost_over_best": 2.2779415884416983
+        },
+        {
+          "false_hold_cost": 50.0,
+          "analyst_review_cost": 10.0,
+          "current_thresholds": {
+            "review": 0.6,
+            "hold": 0.85,
+            "total_cost": 658038.0696358318,
+            "cost_per_100k": 67844.169006943,
+            "missed_fraud": 5,
+            "reviewed": 7747.723966518544,
+            "false_holds": 3524.8857994129266
+          },
+          "alternative_review_0.30_hold_0.85": {
+            "total_cost": 693106.7058471884,
+            "cost_per_100k": 71459.7690637649,
+            "missed_fraud": 1,
+            "reviewed": 11781.733587654195,
+            "false_holds": 3524.8857994129266
+          },
+          "best_on_grid": {
+            "review": 0.05,
+            "hold": 0.99,
+            "total_cost": 244547.529413069,
+            "cost_per_100k": 25213.015296990947,
+            "missed_fraud": 0,
+            "reviewed": 22258.56241207766,
+            "false_holds": 439.2381058458476
+          },
+          "current_cost_over_best": 2.6908391641296427
+        }
+      ]
+    }
+  },
+  "production_score_separation": {
+    "rows_in_review_band_0.30_to_0.85": 0,
+    "decisions_change_between_thresholds_0.05_and_0.95": 1
+  }
+}

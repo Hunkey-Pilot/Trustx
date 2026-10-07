@@ -82,19 +82,136 @@ class CounterfactualEngineTests(unittest.TestCase):
         self.assertEqual(first["dest_balance_error"], 0.0)
 
     def test_cash_in_balance_direction_is_preserved(self):
+        # CASH_IN: the sender's balance RISES and the counter-party's FALLS.
         transaction = self.make_transaction(
             type="CASH_IN",
             oldbalanceOrg=100.0,
             newbalanceOrig=200.0,
-            oldbalanceDest=50.0,
-            newbalanceDest=50.0,
+            oldbalanceDest=500.0,
+            newbalanceDest=400.0,
         )
         model = FakeModelService()
         self.evaluate(transaction, model)
 
-        first = model.inputs[1].iloc[0]
-        self.assertEqual(first["newbalanceOrig"], 25.0)
-        self.assertEqual(first["newbalanceDest"], 125.0)
+        first = model.inputs[1].iloc[0]  # 75% scenario
+        self.assertEqual(first["amount"], 75.0)
+        self.assertEqual(first["newbalanceOrig"], 175.0)
+        self.assertEqual(first["newbalanceDest"], 425.0)
+        self.assertEqual(first["orig_balance_error"], -2 * 75.0)
+        self.assertEqual(first["orig_balance_change"], -75.0)
+
+    def test_balance_semantics_for_every_transaction_type(self):
+        expectations = {
+            # type: (new sender, new recipient) at 50% of an amount of 100,
+            # with old balances of 300 (sender) and 500 (recipient)
+            "TRANSFER": (250.0, 550.0),
+            "CASH_OUT": (250.0, 550.0),
+            "DEBIT": (250.0, 550.0),
+            "PAYMENT": (250.0, 500.0),  # merchant balance is not tracked
+            "CASH_IN": (350.0, 450.0),
+        }
+        for transaction_type, (sender, recipient) in expectations.items():
+            with self.subTest(transaction_type=transaction_type):
+                transaction = self.make_transaction(
+                    type=transaction_type,
+                    oldbalanceOrg=300.0,
+                    oldbalanceDest=500.0,
+                )
+                model = FakeModelService()
+                result = self.evaluate(transaction, model)
+                scenario = model.inputs[2].iloc[0]  # 50% scenario
+                self.assertEqual(scenario["amount"], 50.0)
+                self.assertEqual(scenario["newbalanceOrig"], sender)
+                self.assertEqual(scenario["newbalanceDest"], recipient)
+                self.assertEqual(len(result.counterfactuals), 4)
+
+    def test_real_xgboost_for_every_type_and_ratio_with_consistent_baseline(self):
+        from app.services.feature_engineering import create_model_features
+
+        model = ModelService(self.loaded_models)
+        for transaction_type in ("TRANSFER", "CASH_OUT", "PAYMENT", "DEBIT", "CASH_IN"):
+            with self.subTest(transaction_type=transaction_type):
+                transaction = self.make_transaction(
+                    type=transaction_type, oldbalanceOrg=500.0, oldbalanceDest=500.0
+                )
+                result = self.evaluate(transaction, model, current_probability=0.5)
+                self.assertEqual(
+                    [item.amount_ratio for item in result.counterfactuals], [1.0, 0.75, 0.5, 0.25]
+                )
+                self.assertTrue(all(item.valid for item in result.counterfactuals))
+                self.assertTrue(
+                    all(0.0 <= item.fraud_probability <= 1.0 for item in result.counterfactuals)
+                )
+                # Baseline equals an independent run of the exact feature pipeline.
+                original = transaction.model_dump(exclude={"historical_transactions"})
+                baseline_inputs = CounterfactualEngine._hypothetical_transaction(original, 100.0)
+                history = __import__("pandas").DataFrame(
+                    [item.model_dump() for item in transaction.historical_transactions],
+                    columns=["step", "amount", "nameOrig"],
+                )
+                features = create_model_features(
+                    baseline_inputs, history, self.loaded_models.feature_list
+                )
+                self.assertEqual(
+                    result.baseline_fraud_probability, model.predict(features).fraud_probability
+                )
+                self.assertEqual(result.counterfactuals[0].probability_change, 0.0)
+                self.assertEqual(result.baseline_source, "recomputed")
+
+    def test_cash_in_invalid_when_counterparty_balance_would_go_negative(self):
+        transaction = self.make_transaction(
+            type="CASH_IN",
+            oldbalanceOrg=100.0,
+            oldbalanceDest=60.0,
+        )
+        result = self.evaluate(transaction, FakeModelService())
+        self.assertEqual([item.valid for item in result.counterfactuals], [False, False, True, True])
+
+    def test_changes_are_measured_against_recomputed_baseline(self):
+        transaction = self.make_transaction()
+        # Stored probability (0.9) differs from the recomputed 100% baseline (0.6).
+        model = FakeModelService(
+            lambda amount: {100.0: 0.6, 75.0: 0.5, 50.0: 0.4, 25.0: 0.3}[amount]
+        )
+        result = self.evaluate(transaction, model, current_probability=0.9)
+
+        self.assertEqual(result.baseline_fraud_probability, 0.6)
+        self.assertEqual(result.baseline_source, "recomputed")
+        self.assertFalse(result.baseline_matches_stored)
+        self.assertEqual(result.original_fraud_probability, 0.9)
+        self.assertAlmostEqual(result.counterfactuals[0].probability_change, 0.0)
+        self.assertAlmostEqual(result.counterfactuals[3].probability_change, -0.3)
+        self.assertAlmostEqual(result.best_counterfactual.probability_reduction, 0.3)
+        self.assertEqual(result.best_scenario, result.best_counterfactual)
+
+    def test_baseline_matches_stored_when_model_is_consistent(self):
+        result = self.evaluate(
+            self.make_transaction(), FakeModelService(lambda amount: 0.2), current_probability=0.2
+        )
+        self.assertTrue(result.baseline_matches_stored)
+
+    def test_interpretation_separates_model_output_from_recommendations(self):
+        model = FakeModelService(
+            lambda amount: {100.0: 0.9, 75.0: 0.8, 50.0: 0.6, 25.0: 0.2}[amount]
+        )
+        result = CounterfactualEngine(0.05).evaluate(
+            transaction_id="req_test",
+            transaction=self.make_transaction(),
+            current_probability=0.9,
+            feature_list=self.loaded_models.feature_list,
+            model_service=model,
+            risk_level="CRITICAL",
+            network_signals={"status": "available", "relationship": {"relationship_status": "NEW_RELATIONSHIP"}, "patterns": []},
+        )
+        interpretation = result.interpretation
+        self.assertTrue(interpretation.model_output.startswith("MODEL OUTPUT"))
+        codes = {item.code for item in interpretation.investigation_recommendations}
+        self.assertTrue(
+            {"ANALYST_REVIEW", "ADDITIONAL_VERIFICATION", "TRANSACTION_DELAY", "RECIPIENT_VERIFICATION", "TRANSACTION_LIMIT_REVIEW"}
+            <= codes
+        )
+        self.assertIn("does not make a transaction legitimate", interpretation.disclaimer)
+        self.assertNotIn("proof", interpretation.model_output.lower())
 
     def test_existing_xgboost_pipeline_returns_probability(self):
         transaction = self.make_transaction()

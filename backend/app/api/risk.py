@@ -7,9 +7,14 @@ from sqlalchemy.orm import Session
 from app.db.repository import transaction_summary
 from app.db.session import get_db
 from app.schemas.transactions import TransactionSummaryResponse
+from app.security import require_analyst
 
 
-router = APIRouter(prefix="/api/v1/risk", tags=["risk"])
+router = APIRouter(
+    prefix="/api/v1/risk",
+    tags=["risk"],
+    dependencies=[Depends(require_analyst)],
+)
 
 
 @router.get("/summary", response_model=TransactionSummaryResponse)

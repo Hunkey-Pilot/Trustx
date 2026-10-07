@@ -176,8 +176,13 @@ class CounterfactualAnalysisTests(unittest.TestCase):
                 "transaction_id",
                 "original_amount",
                 "original_fraud_probability",
+                "baseline_fraud_probability",
+                "baseline_source",
+                "baseline_matches_stored",
                 "counterfactuals",
                 "best_counterfactual",
+                "best_scenario",
+                "interpretation",
             },
         )
         self.assertEqual(len(payload["counterfactuals"]), 4)

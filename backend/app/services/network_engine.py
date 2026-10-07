@@ -21,7 +21,12 @@ NETWORK_UNIQUE_RECIPIENTS_THRESHOLD = int(os.getenv("NETWORK_UNIQUE_RECIPIENTS_T
 
 
 class NetworkEngine:
-    """Calculate descriptive connectivity signals from prior history and this transaction."""
+    """Calculate descriptive connectivity signals from prior history and this transaction.
+
+    Point-in-time: only rows with a strictly earlier ``step`` that were already
+    stored at ``analysis_time`` are used. The result is persisted with the
+    analysis, so later transactions never change a stored investigation.
+    """
 
     UNIQUE_SENDER_THRESHOLD = NETWORK_UNIQUE_SENDERS_THRESHOLD
     UNIQUE_RECIPIENT_THRESHOLD = NETWORK_UNIQUE_RECIPIENTS_THRESHOLD
@@ -47,8 +52,9 @@ class NetworkEngine:
         except Exception as exc:
             return NetworkSignals(
                 status="unavailable",
+                source="analysis_time",
                 transaction_id=transaction_id,
-                error=f"Network history unavailable: {type(exc).__name__}",
+                error="Network history is temporarily unavailable",
             )
 
         patterns: list[NetworkPattern] = []
@@ -63,6 +69,7 @@ class NetworkEngine:
 
         return NetworkSignals(
             status="available",
+            source="analysis_time",
             transaction_id=transaction_id,
             sender=NetworkSenderSignals(
                 outgoing_transaction_count=metrics["outgoing_transaction_count"],

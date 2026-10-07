@@ -1,0 +1,463 @@
+{
+  "environment": {
+    "python": "3.14.0",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "scikit_learn": "1.9.1",
+    "xgboost": "3.4.1",
+    "generated_utc": "2026-10-07T05:05:36Z",
+    "command": "evaluation\\run_evaluation.py --sections benchmark,isolation_forest,ablation,baselines,risk,thresholds,fairness,adversarial,signals,report"
+  },
+  "note": "Production thresholds: LOW <30, MEDIUM 30-59, HIGH 60-84, CRITICAL >=85 on probability*100. HIGH and CRITICAL require human review. Counts are computed, not hard-coded.",
+  "production_model": {
+    "levels": {
+      "LOW": {
+        "count": 88215,
+        "fraud": 1,
+        "fraud_rate": 1.1335940599671258e-05
+      },
+      "MEDIUM": {
+        "count": 0,
+        "fraud": 0,
+        "fraud_rate": null
+      },
+      "HIGH": {
+        "count": 0,
+        "fraud": 0,
+        "fraud_rate": null
+      },
+      "CRITICAL": {
+        "count": 1251,
+        "fraud": 1251,
+        "fraud_rate": 1.0
+      }
+    },
+    "high_queue": 0,
+    "critical_queue": 1251,
+    "review_queue_size": 1251,
+    "review_queue_precision": 1.0,
+    "review_queue_recall": 0.9992012779552716,
+    "alerts_per_100k_at_test_prevalence": 1398.296559586882,
+    "alerts_per_100k_reweighted_to_full_dataset_prevalence": 128.97894414324045,
+    "reweighting": {
+      "target_prevalence": 0.001290820448180152,
+      "legit_weight": 10.98095264614619,
+      "method": "legitimate rows weighted so that fraud prevalence equals the full PaySim prevalence"
+    },
+    "false_positives_in_queue": 0,
+    "fpr_rule_of_three_95pct_upper_bound": 3.400820731403178e-05,
+    "rows_with_probability_between_0.05_and_0.95": {
+      "fraud": 0,
+      "legit": 1
+    },
+    "probability_histogram": {
+      "bin_edges": [
+        0,
+        0.01,
+        0.05,
+        0.3,
+        0.6,
+        0.85,
+        0.95,
+        0.99,
+        1.0
+      ],
+      "fraud": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1251
+      ],
+      "legit": [
+        88211,
+        2,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "ablation_B": {
+    "levels": {
+      "LOW": {
+        "count": 88151,
+        "fraud": 2,
+        "fraud_rate": 2.2688341595671065e-05
+      },
+      "MEDIUM": {
+        "count": 2,
+        "fraud": 1,
+        "fraud_rate": 0.5
+      },
+      "HIGH": {
+        "count": 1,
+        "fraud": 0,
+        "fraud_rate": 0.0
+      },
+      "CRITICAL": {
+        "count": 1312,
+        "fraud": 1249,
+        "fraud_rate": 0.9519817073170732
+      }
+    },
+    "high_queue": 1,
+    "critical_queue": 1312,
+    "review_queue_size": 1313,
+    "review_queue_precision": 0.9512566641279513,
+    "review_queue_recall": 0.9976038338658147,
+    "alerts_per_100k_at_test_prevalence": 1467.5966288869515,
+    "alerts_per_100k_reweighted_to_full_dataset_prevalence": 201.22993495289066,
+    "reweighting": {
+      "target_prevalence": 0.001290820448180152,
+      "legit_weight": 10.98095264614619,
+      "method": "legitimate rows weighted so that fraud prevalence equals the full PaySim prevalence"
+    },
+    "false_positives_in_queue": 64,
+    "fpr_rule_of_three_95pct_upper_bound": null,
+    "rows_with_probability_between_0.05_and_0.95": {
+      "fraud": 5,
+      "legit": 9
+    },
+    "probability_histogram": {
+      "bin_edges": [
+        0,
+        0.01,
+        0.05,
+        0.3,
+        0.6,
+        0.85,
+        0.95,
+        0.99,
+        1.0
+      ],
+      "fraud": [
+        0,
+        1,
+        1,
+        1,
+        0,
+        3,
+        10,
+        1236
+      ],
+      "legit": [
+        88128,
+        18,
+        3,
+        1,
+        1,
+        4,
+        4,
+        55
+      ]
+    }
+  },
+  "ablation_C": {
+    "levels": {
+      "LOW": {
+        "count": 88149,
+        "fraud": 1,
+        "fraud_rate": 1.134442818409738e-05
+      },
+      "MEDIUM": {
+        "count": 2,
+        "fraud": 0,
+        "fraud_rate": 0.0
+      },
+      "HIGH": {
+        "count": 1,
+        "fraud": 0,
+        "fraud_rate": 0.0
+      },
+      "CRITICAL": {
+        "count": 1314,
+        "fraud": 1251,
+        "fraud_rate": 0.952054794520548
+      }
+    },
+    "high_queue": 1,
+    "critical_queue": 1314,
+    "review_queue_size": 1315,
+    "review_queue_precision": 0.9513307984790874,
+    "review_queue_recall": 0.9992012779552716,
+    "alerts_per_100k_at_test_prevalence": 1469.8321149934054,
+    "alerts_per_100k_reweighted_to_full_dataset_prevalence": 201.4361363024402,
+    "reweighting": {
+      "target_prevalence": 0.001290820448180152,
+      "legit_weight": 10.98095264614619,
+      "method": "legitimate rows weighted so that fraud prevalence equals the full PaySim prevalence"
+    },
+    "false_positives_in_queue": 64,
+    "fpr_rule_of_three_95pct_upper_bound": null,
+    "rows_with_probability_between_0.05_and_0.95": {
+      "fraud": 2,
+      "legit": 6
+    },
+    "probability_histogram": {
+      "bin_edges": [
+        0,
+        0.01,
+        0.05,
+        0.3,
+        0.6,
+        0.85,
+        0.95,
+        0.99,
+        1.0
+      ],
+      "fraud": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        2,
+        11,
+        1238
+      ],
+      "legit": [
+        88130,
+        17,
+        1,
+        2,
+        1,
+        2,
+        3,
+        58
+      ]
+    }
+  },
+  "ablation_C2": {
+    "levels": {
+      "LOW": {
+        "count": 87256,
+        "fraud": 1,
+        "fraud_rate": 1.146052993490419e-05
+      },
+      "MEDIUM": {
+        "count": 371,
+        "fraud": 4,
+        "fraud_rate": 0.01078167115902965
+      },
+      "HIGH": {
+        "count": 274,
+        "fraud": 3,
+        "fraud_rate": 0.010948905109489052
+      },
+      "CRITICAL": {
+        "count": 1565,
+        "fraud": 1244,
+        "fraud_rate": 0.794888178913738
+      }
+    },
+    "high_queue": 274,
+    "critical_queue": 1565,
+    "review_queue_size": 1839,
+    "review_queue_precision": 0.6780859162588363,
+    "review_queue_recall": 0.9960063897763578,
+    "alerts_per_100k_at_test_prevalence": 2055.5294748843135,
+    "alerts_per_100k_reweighted_to_full_dataset_prevalence": 798.7955689167392,
+    "reweighting": {
+      "target_prevalence": 0.001290820448180152,
+      "legit_weight": 10.98095264614619,
+      "method": "legitimate rows weighted so that fraud prevalence equals the full PaySim prevalence"
+    },
+    "false_positives_in_queue": 592,
+    "fpr_rule_of_three_95pct_upper_bound": null,
+    "rows_with_probability_between_0.05_and_0.95": {
+      "fraud": 16,
+      "legit": 1753
+    },
+    "probability_histogram": {
+      "bin_edges": [
+        0,
+        0.01,
+        0.05,
+        0.3,
+        0.6,
+        0.85,
+        0.95,
+        0.99,
+        1.0
+      ],
+      "fraud": [
+        0,
+        0,
+        1,
+        4,
+        3,
+        8,
+        91,
+        1145
+      ],
+      "legit": [
+        84857,
+        1444,
+        954,
+        367,
+        271,
+        161,
+        120,
+        40
+      ]
+    }
+  },
+  "ablation_F": {
+    "levels": {
+      "LOW": {
+        "count": 88213,
+        "fraud": 1,
+        "fraud_rate": 1.1336197612596782e-05
+      },
+      "MEDIUM": {
+        "count": 1,
+        "fraud": 0,
+        "fraud_rate": 0.0
+      },
+      "HIGH": {
+        "count": 1,
+        "fraud": 0,
+        "fraud_rate": 0.0
+      },
+      "CRITICAL": {
+        "count": 1251,
+        "fraud": 1251,
+        "fraud_rate": 1.0
+      }
+    },
+    "high_queue": 1,
+    "critical_queue": 1251,
+    "review_queue_size": 1252,
+    "review_queue_precision": 0.9992012779552716,
+    "review_queue_recall": 0.9992012779552716,
+    "alerts_per_100k_at_test_prevalence": 1399.414302640109,
+    "alerts_per_100k_reweighted_to_full_dataset_prevalence": 130.11108777072792,
+    "reweighting": {
+      "target_prevalence": 0.001290820448180152,
+      "legit_weight": 10.98095264614619,
+      "method": "legitimate rows weighted so that fraud prevalence equals the full PaySim prevalence"
+    },
+    "false_positives_in_queue": 1,
+    "fpr_rule_of_three_95pct_upper_bound": null,
+    "rows_with_probability_between_0.05_and_0.95": {
+      "fraud": 1,
+      "legit": 5
+    },
+    "probability_histogram": {
+      "bin_edges": [
+        0,
+        0.01,
+        0.05,
+        0.3,
+        0.6,
+        0.85,
+        0.95,
+        0.99,
+        1.0
+      ],
+      "fraud": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1251
+      ],
+      "legit": [
+        88190,
+        19,
+        3,
+        1,
+        1,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "ablation_G": {
+    "levels": {
+      "LOW": {
+        "count": 87729,
+        "fraud": 2,
+        "fraud_rate": 2.2797478598866964e-05
+      },
+      "MEDIUM": {
+        "count": 226,
+        "fraud": 4,
+        "fraud_rate": 0.017699115044247787
+      },
+      "HIGH": {
+        "count": 137,
+        "fraud": 11,
+        "fraud_rate": 0.08029197080291971
+      },
+      "CRITICAL": {
+        "count": 1374,
+        "fraud": 1235,
+        "fraud_rate": 0.8988355167394468
+      }
+    },
+    "high_queue": 137,
+    "critical_queue": 1374,
+    "review_queue_size": 1511,
+    "review_queue_precision": 0.8246194573130378,
+    "review_queue_recall": 0.9952076677316294,
+    "alerts_per_100k_at_test_prevalence": 1688.9097534258824,
+    "alerts_per_100k_reweighted_to_full_dataset_prevalence": 428.4815020535532,
+    "reweighting": {
+      "target_prevalence": 0.001290820448180152,
+      "legit_weight": 10.98095264614619,
+      "method": "legitimate rows weighted so that fraud prevalence equals the full PaySim prevalence"
+    },
+    "false_positives_in_queue": 265,
+    "fpr_rule_of_three_95pct_upper_bound": null,
+    "rows_with_probability_between_0.05_and_0.95": {
+      "fraud": 32,
+      "legit": 1158
+    },
+    "probability_histogram": {
+      "bin_edges": [
+        0,
+        0.01,
+        0.05,
+        0.3,
+        0.6,
+        0.85,
+        0.95,
+        0.99,
+        1.0
+      ],
+      "fraud": [
+        0,
+        1,
+        1,
+        4,
+        11,
+        16,
+        233,
+        986
+      ],
+      "legit": [
+        85776,
+        1194,
+        757,
+        222,
+        126,
+        53,
+        70,
+        16
+      ]
+    }
+  }
+}

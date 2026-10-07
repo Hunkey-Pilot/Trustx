@@ -1,0 +1,88 @@
+{
+  "environment": {
+    "python": "3.14.0",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "scikit_learn": "1.9.1",
+    "xgboost": "3.4.1",
+    "generated_utc": "2026-10-07T05:08:12Z",
+    "command": "evaluation\\run_evaluation.py --sections benchmark,isolation_forest,ablation,baselines,risk,thresholds,fairness,adversarial,signals,report"
+  },
+  "note": "Point-in-time (strictly earlier steps) re-computation of the production network signals over the whole PaySim history for the strict test rows, compared between fraud and legitimate rows. Descriptive only; these signals do not feed the model or the risk score.",
+  "thresholds": {
+    "unique_senders": 5,
+    "unique_recipients": 5,
+    "counts_include_current_transaction": true
+  },
+  "all_test_rows": {
+    "fraud": {
+      "n": 1252,
+      "recipient_unique_senders_incl_current": {
+        "mean": 3.713258785942492,
+        "median": 1.0,
+        "p95": 17.0
+      },
+      "sender_unique_recipients_incl_current": {
+        "mean": 1.0007987220447285,
+        "max": 2
+      },
+      "new_relationship_share": 1.0,
+      "HIGH_RECIPIENT_CONNECTIVITY_fires": 0.20926517571884984,
+      "HIGH_SENDER_CONNECTIVITY_fires": 0.0
+    },
+    "legit": {
+      "n": 88214,
+      "recipient_unique_senders_incl_current": {
+        "mean": 5.975638787494049,
+        "median": 2.0,
+        "p95": 23.0
+      },
+      "sender_unique_recipients_incl_current": {
+        "mean": 1.0025846237558664,
+        "max": 2
+      },
+      "new_relationship_share": 1.0,
+      "HIGH_RECIPIENT_CONNECTIVITY_fires": 0.37218582084476387,
+      "HIGH_SENDER_CONNECTIVITY_fires": 0.0
+    }
+  },
+  "transfer_and_cash_out_only": {
+    "fraud": {
+      "n": 1252,
+      "recipient_unique_senders_incl_current": {
+        "mean": 3.713258785942492,
+        "median": 1.0,
+        "p95": 17.0
+      },
+      "sender_unique_recipients_incl_current": {
+        "mean": 1.0007987220447285,
+        "max": 2
+      },
+      "new_relationship_share": 1.0,
+      "HIGH_RECIPIENT_CONNECTIVITY_fires": 0.20926517571884984,
+      "HIGH_SENDER_CONNECTIVITY_fires": 0.0
+    },
+    "legit": {
+      "n": 36727,
+      "recipient_unique_senders_incl_current": {
+        "mean": 8.441146840199309,
+        "median": 5.0,
+        "p95": 27.0
+      },
+      "sender_unique_recipients_incl_current": {
+        "mean": 1.0024505132463855,
+        "max": 2
+      },
+      "new_relationship_share": 1.0,
+      "HIGH_RECIPIENT_CONNECTIVITY_fires": 0.5554496691807117,
+      "HIGH_SENDER_CONNECTIVITY_fires": 0.0
+    }
+  },
+  "sender_history_availability": {
+    "test_rows_with_any_prior_transaction_by_same_sender": 229,
+    "test_rows": 89466,
+    "meaning": "Sender velocity and amount-vs-history signals are almost never available on PaySim."
+  },
+  "behavioral_note": "Because nameOrig almost never repeats, sender-velocity behavioural signals cannot be evaluated on PaySim."
+}

@@ -5,6 +5,7 @@ import AnalysisResult from "@/components/AnalysisResult";
 import SiteHeader from "@/components/SiteHeader";
 import TransactionForm from "@/components/TransactionForm";
 import {
+  ApiError,
   analyzeTransaction,
   getTransactionCounterfactual,
   type CounterfactualResponse,
@@ -33,9 +34,11 @@ export default function AnalyzePage() {
       } catch {
         setCounterfactual(null);
       }
-    } catch {
+    } catch (analysisError) {
       setError(
-        "Unable to analyze transaction. Please check that the FastAPI server is running.",
+        analysisError instanceof ApiError
+          ? analysisError.message
+          : "Unable to analyze transaction. Please check that the FastAPI server is running.",
       );
     } finally {
       setIsLoading(false);

@@ -1,44 +1,17 @@
+import Link from "next/link";
 import type {
   CounterfactualResponse,
-  SignalPayload,
   TransactionAnalysisResponse,
 } from "@/lib/api";
 import CounterfactualAnalysis from "@/components/CounterfactualAnalysis";
+import BehavioralSignalsPanel from "@/components/BehavioralSignalsPanel";
+import InvestigatorSummaryPanel from "@/components/InvestigatorSummaryPanel";
+import NetworkAnalysisPanel from "@/components/NetworkAnalysisPanel";
+import { MODEL_SCORE_DISCLAIMER, formatNumber } from "@/lib/format";
 
 interface AnalysisResultProps {
   result: TransactionAnalysisResponse | null;
   counterfactual: CounterfactualResponse | null;
-}
-
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    maximumSignificantDigits: 7,
-  }).format(value);
-}
-
-function SignalSection({
-  title,
-  signal,
-}: {
-  title: string;
-  signal: SignalPayload | null;
-}) {
-  const available = signal?.status === "available";
-  return (
-    <section className="detail-section">
-      <div className="section-heading">
-        <h3>{title}</h3>
-        <span className={available ? "availability available" : "availability"}>
-          {available ? "Available" : "Not available"}
-        </span>
-      </div>
-      {available ? (
-        <pre className="signal-data">{JSON.stringify(signal, null, 2)}</pre>
-      ) : (
-        <p className="muted-copy">Not available</p>
-      )}
-    </section>
-  );
 }
 
 export default function AnalysisResult({
@@ -58,11 +31,17 @@ export default function AnalysisResult({
 
   return (
     <div className="results-content" aria-live="polite">
+      {result.is_duplicate && (
+        <p className="duplicate-notice" role="status">
+          This transaction was already analyzed. The stored analysis is shown and no new record was
+          created.
+        </p>
+      )}
       <section className="summary-section">
         <div className="result-title-row">
           <div>
             <p className="eyebrow">Analysis result</p>
-            <h2>Model assessment</h2>
+            <h2>Risk assessment</h2>
           </div>
           <span className={`risk-tag risk-${result.risk_level.toLowerCase()}`}>
             {result.risk_level}
@@ -71,24 +50,35 @@ export default function AnalysisResult({
 
         <div className="metric-grid">
           <div className="metric metric-primary">
-            <span>Fraud probability</span>
+            <span>Model score</span>
             <strong>{formatNumber(result.fraud_probability)}</strong>
+            <small>Uncalibrated model output</small>
           </div>
           <div className="metric">
             <span>Risk score</span>
             <strong>{formatNumber(result.risk_score)}</strong>
+            <small>Model score x 100</small>
           </div>
           <div className="metric">
             <span>Anomaly signal</span>
             <strong>{formatNumber(result.anomaly_signal)}</strong>
-            <small>Raw Isolation Forest decision value</small>
+            <small>Isolation Forest value (below 0 = more unusual); not part of the risk score</small>
           </div>
           <div className="metric">
             <span>Recommended action</span>
             <strong className="action-value">{result.recommended_action}</strong>
           </div>
         </div>
+        <p className="score-disclaimer">{MODEL_SCORE_DISCLAIMER}</p>
+        <Link
+          className="view-link open-investigation-link"
+          href={`/transactions/${encodeURIComponent(result.transaction_id)}`}
+        >
+          Open full investigation
+        </Link>
       </section>
+
+      <InvestigatorSummaryPanel value={result.investigator_summary} />
 
       <section className="detail-section shap-section">
         <div className="section-heading">
@@ -123,6 +113,7 @@ export default function AnalysisResult({
         ) : (
           <p className="muted-copy">Not available</p>
         )}
+        <p className="source-note">SHAP describes how the model used its inputs; it is not causal proof.</p>
       </section>
 
       <section className="detail-section evidence-section">
@@ -147,8 +138,8 @@ export default function AnalysisResult({
         </div>
       </section>
 
-      <SignalSection title="Behavioral signals" signal={result.behavioral_signals} />
-      <SignalSection title="Network signals" signal={result.network_signals} />
+      <BehavioralSignalsPanel value={result.behavioral_signals} />
+      <NetworkAnalysisPanel value={result.network_signals} />
 
       <section className="detail-section counterfactual-section">
         <CounterfactualAnalysis value={counterfactual} />

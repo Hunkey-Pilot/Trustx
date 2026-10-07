@@ -1,0 +1,109 @@
+{
+  "environment": {
+    "python": "3.14.0",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "scikit_learn": "1.9.1",
+    "xgboost": "3.4.1",
+    "generated_utc": "2026-10-07T05:05:35Z",
+    "command": "evaluation\\run_evaluation.py --sections benchmark,isolation_forest,ablation,baselines,risk,thresholds,fairness,adversarial,signals,report"
+  },
+  "models": {
+    "logistic_regression": {
+      "n": 89466,
+      "positives": 1252,
+      "prevalence": 0.01399414302640109,
+      "threshold": 0.5,
+      "precision": 0.1967509025270758,
+      "recall": 0.957667731629393,
+      "f1": 0.3264361557310101,
+      "confusion_matrix": {
+        "tn": 83319,
+        "fp": 4895,
+        "fn": 53,
+        "tp": 1199
+      },
+      "roc_auc": 0.9924692917477546,
+      "pr_auc": 0.8058290105238297,
+      "train_rows": 1005781,
+      "train_legit_sampled": 1000000,
+      "train_fraud": 5781,
+      "seconds": 12.5,
+      "training_note": "all training fraud rows + a random sample of legitimate rows (seed 42)"
+    },
+    "random_forest": {
+      "n": 89466,
+      "positives": 1252,
+      "prevalence": 0.01399414302640109,
+      "threshold": 0.5,
+      "precision": 1.0,
+      "recall": 0.9992012779552716,
+      "f1": 0.9996004794246903,
+      "confusion_matrix": {
+        "tn": 88214,
+        "fp": 0,
+        "fn": 1,
+        "tp": 1251
+      },
+      "roc_auc": 0.9999999456737902,
+      "pr_auc": 0.99999619051489,
+      "train_rows": 405781,
+      "train_legit_sampled": 400000,
+      "train_fraud": 5781,
+      "seconds": 65.9,
+      "training_note": "all training fraud rows + a random sample of legitimate rows (seed 42); 150 trees, max_depth 14"
+    },
+    "rule_transfer_cashout_account_emptied": {
+      "n": 89466,
+      "positives": 1252,
+      "prevalence": 0.01399414302640109,
+      "threshold": 0.5,
+      "precision": 0.0593941793704217,
+      "recall": 0.9584664536741214,
+      "f1": 0.11185682326621924,
+      "confusion_matrix": {
+        "tn": 69210,
+        "fp": 19004,
+        "fn": 52,
+        "tp": 1200
+      },
+      "roc_auc": 0.8715178982044174,
+      "pr_auc": 0.057508554857730744,
+      "definition": "type in (TRANSFER, CASH_OUT) AND newbalanceOrig == 0 AND oldbalanceOrg > 0"
+    },
+    "amount_threshold": {
+      "n": 89466,
+      "positives": 1252,
+      "prevalence": 0.01399414302640109,
+      "threshold": 0.5,
+      "precision": 0.4816753926701571,
+      "recall": 0.14696485623003194,
+      "f1": 0.2252141982864137,
+      "confusion_matrix": {
+        "tn": 88016,
+        "fp": 198,
+        "fn": 1068,
+        "tp": 184
+      },
+      "roc_auc": 0.5723601572736529,
+      "pr_auc": 0.08272685064177737,
+      "threshold_amount": 3696773.661160568,
+      "threshold_selected_on": "train split (max F1)",
+      "train_f1": 0.06398520573277855,
+      "score_note": "ROC/PR-AUC use the binary flag; see amount_score_auc for the continuous amount",
+      "amount_score_auc": {
+        "roc_auc": 0.7903347841811639,
+        "pr_auc": 0.21069584396000537
+      }
+    }
+  },
+  "test": {
+    "rows": 89466,
+    "fraud": 1252,
+    "prevalence": 0.01399414302640109,
+    "steps": 112,
+    "fraud_per_step": 11.178571428571429,
+    "legit_per_step": 787.625
+  }
+}

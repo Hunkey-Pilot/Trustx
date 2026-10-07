@@ -20,7 +20,12 @@ from app.schemas.transactions import (
 
 
 class BehavioralEngine:
-    """Calculate contextual behavior signals from persisted history only."""
+    """Calculate contextual behavior signals from persisted history only.
+
+    Point-in-time: only rows with a strictly earlier ``step`` that were already
+    stored at ``analysis_time`` are used. Time windows (5m/1h/24h) are
+    wall-clock windows over the storage time of previously analyzed rows.
+    """
 
     def calculate(
         self,
@@ -56,11 +61,13 @@ class BehavioralEngine:
         except Exception as exc:
             return BehavioralSignals(
                 status="unavailable",
-                error=f"Behavioral history unavailable: {type(exc).__name__}",
+                source="analysis_time",
+                error="Behavioral history is temporarily unavailable",
             )
 
         return BehavioralSignals(
             status="available",
+            source="analysis_time",
             sender=SenderBehaviorSignals(
                 current_amount=transaction.amount,
                 transaction_count_5m=sender["count_5m"],

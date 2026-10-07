@@ -18,6 +18,9 @@ export default function SiteHeader({ current = "dashboard" }: SiteHeaderProps) {
         >
           Dashboard
         </Link>
+        <Link className="nav-link" href="/#review-queue">
+          Review queue
+        </Link>
         <Link
           className={current === "transactions" ? "nav-link active" : "nav-link"}
           href="/#transactions"

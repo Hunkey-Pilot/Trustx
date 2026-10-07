@@ -1,0 +1,74 @@
+{
+  "note": "Single-machine local benchmark; not a production throughput claim.",
+  "generated_utc": "2026-10-07T05:15:21+00:00",
+  "iterations": 100,
+  "in_process_stages": [
+    {
+      "stage": "feature_engineering",
+      "mean_ms": 7.797,
+      "p95_ms": 8.48,
+      "max_ms": 8.57
+    },
+    {
+      "stage": "xgboost_and_isolation_forest",
+      "mean_ms": 84.201,
+      "p95_ms": 87.815,
+      "max_ms": 89.604
+    },
+    {
+      "stage": "shap",
+      "mean_ms": 25.409,
+      "p95_ms": 27.039,
+      "max_ms": 27.52
+    },
+    {
+      "stage": "behavioral_queries",
+      "mean_ms": 22.516,
+      "p95_ms": 24.58,
+      "max_ms": 26.423
+    },
+    {
+      "stage": "network_queries",
+      "mean_ms": 7.533,
+      "p95_ms": 8.456,
+      "max_ms": 9.239
+    },
+    {
+      "stage": "counterfactual_4_scenarios",
+      "mean_ms": 367.481,
+      "p95_ms": 376.543,
+      "max_ms": 381.854
+    },
+    {
+      "stage": "risk_and_evidence",
+      "mean_ms": 0.21,
+      "p95_ms": 0.236,
+      "max_ms": 0.244
+    },
+    {
+      "stage": "TOTAL (excl. counterfactual, which is a separate request)",
+      "mean_ms": 147.665,
+      "p95_ms": 153.803,
+      "max_ms": 155.979
+    },
+    {
+      "stage": "TOTAL incl. counterfactual",
+      "mean_ms": 515.146,
+      "p95_ms": 525.677,
+      "max_ms": 532.382
+    }
+  ],
+  "http_load": {
+    "requests": 100,
+    "workers": 1,
+    "ok": 100,
+    "status_counts": {
+      "200": 100
+    },
+    "wall_seconds": 18.061,
+    "throughput_rps": 5.54,
+    "mean_ms": 180.34,
+    "p95_ms": 185.13
+  },
+  "cleanup_deleted_rows": 105
+}

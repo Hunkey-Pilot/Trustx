@@ -59,6 +59,48 @@ function parseHistoricalTransactions(value: string): HistoricalTransaction[] {
   });
 }
 
+interface ExampleRow {
+  label: string;
+  type: TransactionType;
+  step: number;
+  amount: number;
+  sender: string;
+  recipient: string;
+  senderOld: number;
+  senderNew: number;
+  recipientOld: number;
+  recipientNew: number;
+}
+
+// Literal rows from the PaySim dataset (synthetic). Loading one does not imply any
+// particular model result; the model decides.
+const EXAMPLES: ExampleRow[] = [
+  {
+    label: "PaySim PAYMENT row",
+    type: "PAYMENT",
+    step: 1,
+    amount: 1864.28,
+    sender: "C1666544295",
+    recipient: "M2044282225",
+    senderOld: 21249,
+    senderNew: 19384.72,
+    recipientOld: 0,
+    recipientNew: 0,
+  },
+  {
+    label: "PaySim TRANSFER row (account emptied)",
+    type: "TRANSFER",
+    step: 1,
+    amount: 181,
+    sender: "C1305486145",
+    recipient: "C553264065",
+    senderOld: 181,
+    senderNew: 0,
+    recipientOld: 0,
+    recipientNew: 0,
+  },
+];
+
 export default function TransactionForm({
   isLoading,
   onAnalyze,
@@ -74,6 +116,20 @@ export default function TransactionForm({
   const [step, setStep] = useState("");
   const [historyText, setHistoryText] = useState("[]");
   const [formError, setFormError] = useState<string | null>(null);
+
+  function applyExample(example: ExampleRow) {
+    setTransactionType(example.type);
+    setStep(String(example.step));
+    setAmount(String(example.amount));
+    setSender(example.sender);
+    setRecipient(example.recipient);
+    setSenderOldBalance(String(example.senderOld));
+    setSenderNewBalance(String(example.senderNew));
+    setRecipientOldBalance(String(example.recipientOld));
+    setRecipientNewBalance(String(example.recipientNew));
+    setHistoryText("[]");
+    setFormError(null);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -113,6 +169,20 @@ export default function TransactionForm({
           <h2>Transaction details</h2>
         </div>
         <span className="required-note">All fields required</span>
+      </div>
+
+      <div className="example-row" aria-label="Load an example">
+        <span>Load example:</span>
+        {EXAMPLES.map((example) => (
+          <button
+            type="button"
+            className="example-button"
+            key={example.label}
+            onClick={() => applyExample(example)}
+          >
+            {example.label}
+          </button>
+        ))}
       </div>
 
       <div className="form-grid">

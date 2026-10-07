@@ -1,0 +1,109 @@
+{
+  "environment": {
+    "python": "3.14.0",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "scikit_learn": "1.9.1",
+    "xgboost": "3.4.1",
+    "generated_utc": "2026-10-07T04:42:49Z",
+    "command": "evaluation\\run_evaluation.py --sections benchmark,isolation_forest,ablation,baselines,risk,thresholds,fairness,adversarial,signals,report"
+  },
+  "dataset": "PaySim (synthetic)",
+  "note": "Synthetic simulator benchmark. NOT real-world or upay production performance.",
+  "split": {
+    "rows_total": 6362620,
+    "dataset_prevalence": 0.001290820448180152,
+    "train_last_step": 520,
+    "val_last_step": 631,
+    "train": {
+      "rows": 6082007,
+      "fraud": 5781,
+      "prevalence": 0.0009505086067806235,
+      "steps": 520,
+      "fraud_per_step": 11.117307692307692,
+      "legit_per_step": 11685.05
+    },
+    "val": {
+      "rows": 191147,
+      "fraud": 1180,
+      "prevalence": 0.006173259323975788,
+      "steps": 111,
+      "fraud_per_step": 10.63063063063063,
+      "legit_per_step": 1711.4144144144145
+    },
+    "test": {
+      "rows": 89466,
+      "fraud": 1252,
+      "prevalence": 0.01399414302640109,
+      "steps": 112,
+      "fraud_per_step": 11.178571428571429,
+      "legit_per_step": 787.625
+    }
+  },
+  "production_model_strict_test": {
+    "n": 89466,
+    "positives": 1252,
+    "prevalence": 0.01399414302640109,
+    "threshold": 0.5,
+    "precision": 1.0,
+    "recall": 0.9992012779552716,
+    "f1": 0.9996004794246903,
+    "confusion_matrix": {
+      "tn": 88214,
+      "fp": 0,
+      "fn": 1,
+      "tp": 1251
+    },
+    "roc_auc": 0.9999999185106854,
+    "pr_auc": 0.9999942993668497
+  },
+  "matches_readme_benchmark": {
+    "precision": true,
+    "recall": true,
+    "f1": true,
+    "roc_auc": true,
+    "pr_auc": true,
+    "confusion_matrix": true
+  },
+  "all_match": true,
+  "shortcut_check": {
+    "orig_balance_error_is_zero_share_fraud": 0.994408945686901,
+    "orig_balance_error_is_zero_share_legit": 0.21489786201736685
+  },
+  "strict_pit_history_variant": {
+    "rows_whose_user_features_differ_from_notebook_policy": 4776,
+    "metrics": {
+      "n": 89466,
+      "positives": 1252,
+      "prevalence": 0.01399414302640109,
+      "threshold": 0.5,
+      "precision": 1.0,
+      "recall": 0.9992012779552716,
+      "f1": 0.9996004794246903,
+      "confusion_matrix": {
+        "tn": 88214,
+        "fp": 0,
+        "fn": 1,
+        "tp": 1251
+      },
+      "roc_auc": 0.9999999185106854,
+      "pr_auc": 0.9999942993668497
+    },
+    "max_abs_probability_difference_vs_notebook_policy": 0.0
+  },
+  "test_type_counts": {
+    "all": {
+      "PAYMENT": 30062,
+      "CASH_OUT": 29152,
+      "CASH_IN": 20713,
+      "TRANSFER": 8827,
+      "DEBIT": 712
+    },
+    "fraud": {
+      "TRANSFER": 626,
+      "CASH_OUT": 626
+    }
+  },
+  "test_rows_with_sender_history": 229
+}

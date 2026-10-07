@@ -40,9 +40,19 @@ def create_model_features(
 ) -> pd.DataFrame:
     """Create one model-ready row using the notebook's feature formulas.
 
-    Historical context must contain only rows available before the transaction,
-    in the original dataframe order for rows sharing the same step. Rows with
-    a matching step are treated as preceding rows in the supplied order.
+    Point-in-time policy (runtime):
+
+    * history rows with ``step < current step`` are used;
+    * history rows with ``step == current step`` are accepted but IGNORED,
+      because the order of transactions inside one PaySim step (one hour) is
+      not defined, so they cannot be proven to precede the transaction;
+    * history rows with ``step > current step`` are rejected.
+
+    Difference from training: the original notebook computed ``user_*``
+    features with ``groupby(nameOrig).cumcount()`` over the step-sorted
+    dataframe, which also counted earlier rows of the same step. The model
+    artifacts are unchanged; in PaySim this only matters for the ~0.15% of
+    rows whose sender appears more than once.
     """
     _validate_transaction(transaction)
     _validate_historical_context(historical_context, transaction["step"])
@@ -56,7 +66,8 @@ def create_model_features(
     hour = step % 24
 
     sender_history = historical_context.loc[
-        historical_context["nameOrig"] == transaction["nameOrig"]
+        (historical_context["nameOrig"] == transaction["nameOrig"])
+        & (historical_context["step"] < step)
     ].sort_values("step", kind="stable")
 
     user_tx_count_before = len(sender_history)

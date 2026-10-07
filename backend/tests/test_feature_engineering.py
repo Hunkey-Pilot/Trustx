@@ -74,11 +74,13 @@ class FeatureEngineeringTests(unittest.TestCase):
         self.assertEqual(features.loc[0, "amount_to_dest_balance"], 100.0 / 51.0)
         self.assertEqual(features.loc[0, "orig_balance_error"], 0.0)
         self.assertEqual(features.loc[0, "dest_balance_error"], 0.0)
-        self.assertEqual(features.loc[0, "user_tx_count_before"], 2)
-        self.assertEqual(features.loc[0, "user_amount_sum_before"], 50.0)
-        self.assertEqual(features.loc[0, "user_avg_amount_before"], 25.0)
-        self.assertEqual(features.loc[0, "amount_vs_user_avg"], 100.0 / 26.0)
-        self.assertEqual(features.loc[0, "user_max_amount_before"], 30.0)
+        # Point-in-time policy: the step-49 history row shares the current step
+        # (49) and is ignored; only the step-47 row counts.
+        self.assertEqual(features.loc[0, "user_tx_count_before"], 1)
+        self.assertEqual(features.loc[0, "user_amount_sum_before"], 20.0)
+        self.assertEqual(features.loc[0, "user_avg_amount_before"], 20.0)
+        self.assertEqual(features.loc[0, "amount_vs_user_avg"], 100.0 / 21.0)
+        self.assertEqual(features.loc[0, "user_max_amount_before"], 20.0)
         self.assertEqual(features.loc[0, "type_TRANSFER"], 1)
         self.assertEqual(features.loc[0, "type_PAYMENT"], 0)
 
