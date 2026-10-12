@@ -325,21 +325,44 @@ export function getRiskSummary(): Promise<TransactionSummaryResponse> {
   return request("/api/v1/risk/summary", DASHBOARD_ERROR);
 }
 
-export function getTransactions(pageSize = 10): Promise<TransactionListResponse> {
-  const query = new URLSearchParams({ page: "1", page_size: String(pageSize) });
+export function getTransactions(
+  options: {
+    page?: number;
+    pageSize?: number;
+    risk_level?: RiskLevel;
+    recommended_action?: string;
+    review_status?: string;
+    sort_by?: "created_at" | "fraud_probability" | "risk_score" | "amount" | "risk_priority";
+    sort_order?: "asc" | "desc";
+    transaction_id?: string;
+    review_queue?: boolean;
+  } = {},
+): Promise<TransactionListResponse> {
+  const query = new URLSearchParams({
+    page: String(options.page ?? 1),
+    page_size: String(options.pageSize ?? 10),
+  });
+
+  if (options.risk_level) query.set("risk_level", options.risk_level);
+  if (options.recommended_action) query.set("recommended_action", options.recommended_action);
+  if (options.review_status) query.set("review_status", options.review_status);
+  if (options.sort_by) query.set("sort_by", options.sort_by);
+  if (options.sort_order) query.set("sort_order", options.sort_order);
+  if (options.transaction_id) query.set("transaction_id", options.transaction_id);
+  if (options.review_queue) query.set("review_queue", "true");
+
   return request(`/api/v1/transactions?${query.toString()}`, DASHBOARD_ERROR);
 }
 
 /** HIGH/CRITICAL transactions without a closed review, highest risk first. */
 export function getReviewQueue(pageSize = 10): Promise<TransactionListResponse> {
-  const query = new URLSearchParams({
-    page: "1",
-    page_size: String(pageSize),
-    review_queue: "true",
+  return getTransactions({
+    page: 1,
+    pageSize,
+    review_queue: true,
     sort_by: "risk_priority",
     sort_order: "desc",
   });
-  return request(`/api/v1/transactions?${query.toString()}`, DASHBOARD_ERROR);
 }
 
 export function getTransaction(transactionId: string): Promise<PersistedTransaction> {

@@ -7,10 +7,13 @@ interface SiteHeaderProps {
 export default function SiteHeader({ current = "dashboard" }: SiteHeaderProps) {
   return (
     <header className="topbar">
-      <Link className="brand" href="/" aria-label="TrustX dashboard">
-        <span className="brand-mark">TX</span>
-        <span>TrustX</span>
-      </Link>
+      <div className="topbar-left">
+        <Link className="brand" href="/" aria-label="TrustX dashboard">
+          <span className="brand-mark">TX</span>
+          <span>TrustX</span>
+        </Link>
+      </div>
+
       <nav className="topbar-nav" aria-label="Main navigation">
         <Link
           className={current === "dashboard" ? "nav-link active" : "nav-link"}
@@ -34,9 +37,10 @@ export default function SiteHeader({ current = "dashboard" }: SiteHeaderProps) {
           Analyze
         </Link>
       </nav>
+
       <div className="topbar-meta">
         <span className="status-dot" aria-hidden="true" />
-        <span>Risk intelligence</span>
+        <span className="status-label">Live monitoring</span>
       </div>
     </header>
   );

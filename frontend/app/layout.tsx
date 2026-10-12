@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TrustX | Transaction Analysis",
-  description: "Transaction risk analysis workspace",
+  title: "TrustX | Risk Intelligence Dashboard",
+  description: "Premium trust and risk intelligence dashboard for transaction monitoring.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
